@@ -29,8 +29,12 @@ void cpuCycle(CPU *cpu) {
   int  flags;
   int  p;
   char buffer[32];
+  char tbuffer[256];
   word w;
-  if (trace) printf("R%x:[%04x] ",cpu->p,cpu->r[cpu->p],cpu->ram[cpu->r[cpu->p]]);
+  if (showTrace) {
+    sprintf(tbuffer,"R%x:[%04x] ",cpu->p,cpu->r[cpu->p],cpu->ram[cpu->r[cpu->p]]);
+    trace(tbuffer);
+    }
   if (useElfos) {
     switch (cpu->r[cpu->p]) {
       case 0x0306:                                                         // o_open
@@ -179,14 +183,14 @@ void cpuCycle(CPU *cpu) {
     }
   switch (cpu->r[cpu->p]) {
     case 0xff3f:                                                           // f_initcall
-         if (trace) printf("CALL  F_INITCALL\n");
+         if (showTrace) trace("CALL  F_INITCALL\n");
          cpu->r[4] = 0xfa7b;
          cpu->r[5] = 0xfa8d;
          cpu->r[3] = cpu->r[6];
          return;
          break;
     case 0xfa7b:                                                           // call
-         if (trace) printf("CALL  SCALL %02X%02X\n",cpu->ram[cpu->r[3]],cpu->ram[cpu->r[3]+1]);
+         if (showTrace) printf("CALL  SCALL %02X%02X\n",cpu->ram[cpu->r[3]],cpu->ram[cpu->r[3]+1]);
          cpu->ram[cpu->r[cpu->x]--] = ((cpu->r[6] >> 8) & 0xff);
          cpu->ram[cpu->r[cpu->x]--] = (cpu->r[6] & 0xff);
          cpu->r[6] = cpu->r[3];
@@ -197,7 +201,7 @@ void cpuCycle(CPU *cpu) {
          return;
          break;
     case 0xfa8d:                                                           // ret
-         if (trace) printf("CALL  SRET\n");
+         if (showTrace) trace("CALL  SRET\n");
          cpu->r[3] = cpu->r[6];
          cpu->r[cpu->x]++;
          cpu->r[6] = (cpu->ram[cpu->r[cpu->x]++]);
@@ -207,7 +211,7 @@ void cpuCycle(CPU *cpu) {
          return;
          break;
     case 0xff03:                                                           // f_type
-         if (trace) printf("CALL  F_TYPE\n");
+         if (showTrace) trace("CALL  F_TYPE\n");
          if (cpu->d == 0x0c) printf("\e[2J");
            else printf("%c",cpu->d);
          fflush(stdout);
@@ -215,7 +219,7 @@ void cpuCycle(CPU *cpu) {
          return;
          break;
     case 0xff06:                                                           // f_read
-         if (trace) printf("CALL  F_READ\n");
+         if (showTrace) trace("CALL  F_READ\n");
          read(0,&key,1);
          if (key == 127) key = 8;
          printf("%c",key);
@@ -232,7 +236,7 @@ void cpuCycle(CPU *cpu) {
          break;
     case 0xff0f:                                                           // f_input
     case 0xff69:                                                           // f_inputl
-         if (trace) printf("CALL  F_INPUT\n");
+         if (showTrace) trace("CALL  F_INPUT\n");
          key = 0;
          while (key != 10 && key != 13 && key != 27) {
            read(0,&key,1);
@@ -258,14 +262,14 @@ void cpuCycle(CPU *cpu) {
          return;
          break;
     case 0xff4e:                                                           // f_tty
-         if (trace) printf("CALL  F_TTY\n");
+         if (showTrace) trace("CALL  F_TTY\n");
          printf("%c",cpu->d);
          fflush(stdout);
          sret(cpu);
          return;
          break;
     case 0xff09:                                                           // f_msg
-         if (trace) printf("CALL  F_MSG\n");
+         if (showTrace) trace("CALL  F_MSG\n");
          i = cpu->ram[cpu->r[0xf]++];
          while (i != 0) {
            printf("%c",i);
@@ -276,7 +280,7 @@ void cpuCycle(CPU *cpu) {
          return;
          break;
     case 0xff66:                                                           // f_inmsg
-         if (trace) printf("CALL  F_INMSG\n");
+         if (showTrace) trace("CALL  F_INMSG\n");
          i = cpu->ram[cpu->r[6]++];
          while (i != 0) {
            printf("%c",i);
@@ -287,11 +291,12 @@ void cpuCycle(CPU *cpu) {
          return;
          break;
     case 0xff2d:                                                           // f_setbd
-         if (trace) printf("CALL  F_SETBD\n");
+         if (showTrace) trace("CALL  F_SETBD\n");
          sret(cpu);
          return;
          break;
     case 0xff7b:                                                           // f_idnum
+         if (showTrace) trace("CALL  F_IDNUM\n");
          w = cpu->r[15];
          if (cpu->ram[w] < '0' || cpu->ram[w] > '9') {
            cpu->df = 1;
@@ -322,6 +327,7 @@ void cpuCycle(CPU *cpu) {
          return;
          break;
     case 0xff5d:                                                           // f_atoi
+         if (showTrace) trace("CALL  F_ATOI\n");
          w = cpu->r[15];
          cpu->d = 0;
          if (cpu->ram[w] < '0' || cpu->ram[w] > '9') {
@@ -339,6 +345,7 @@ void cpuCycle(CPU *cpu) {
          return;
          break;
     case 0xff63:                                                           // f_intout
+         if (showTrace) trace("CALL  F_INTOUT\n");
          w = cpu->r[0xd];
          if (w & 0x8000) {
            cpu->ram[cpu->r[15]++] = '-';
@@ -351,41 +358,44 @@ void cpuCycle(CPU *cpu) {
          return;
          break;
     }
-//  if (cpu->r[cpu->p] >= 0xf000) {
-//printf("Unsupported BIOS call: %04x\n",cpu->r[cpu->p]);
-//    exit(1);
-//    }
+  if (cpu->r[cpu->p] >= 0xf000) {
+    printf("Unsupported BIOS call: %04x\n",cpu->r[cpu->p]);
+    if (tcsetattr(0,TCSANOW,&original) != 0) {
+      printf("Could not restore terminal attributes\n");
+      }
+    exit(1);
+    }
   i = cpu->ram[cpu->r[cpu->p]++];
   cpu->n = i & 0xf;
   cpu->i = (i >> 4) & 0xff;
   switch (cpu->i) {
     case 0:                                                                // LDN
          if (cpu->n == 0) {                                                // IDL
-           if (trace) printf("IDL\n");
+           if (showTrace) trace("IDL\n");
            cpu->idle = 1;
            }
          else {
-           if (trace) printf("LDN   R%X\n",cpu->n);
+           if (showTrace) printf("LDN   R%X\n",cpu->n);
            cpu->d = cpu->ram[cpu->r[cpu->n]];
            }
          break;
     case 1:                                                                // INC
-         if (trace) printf("INC   R%X\n",cpu->n);
+         if (showTrace) printf("INC   R%X\n",cpu->n);
          cpu->r[cpu->n]++;
          break;
     case 2:                                                                // DEC
-         if (trace) printf("DEC   R%X\n",cpu->n);
+         if (showTrace) printf("DEC   R%X\n",cpu->n);
          cpu->r[cpu->n]--;
          break;
     case 3:
          switch (cpu->n) {
            case 0x00:                                                      // BR
-                if (trace) printf("BR    %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("BR    %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                  cpu->ram[cpu->r[cpu->p]];
                 break;
            case 0x01:                                                      // BQ
-                if (trace) printf("BQ    %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("BQ    %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 if (cpu->q)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    cpu->ram[cpu->r[cpu->p]];
@@ -393,114 +403,128 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p]++;
                 break;
            case 0x02:                                                      // BZ
-                if (trace) printf("BZ    %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("BZ    %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 if (cpu->d == 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    cpu->ram[cpu->r[cpu->p]];
+                else
                   cpu->r[cpu->p]++;
                 break;
            case 0x03:                                                      // BDF
-                if (trace) printf("BDF   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("BDF   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 if (cpu->df != 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    cpu->ram[cpu->r[cpu->p]];
+                else
                   cpu->r[cpu->p]++;
                 break;
            case 0x04:                                                      // B1
-                if (trace) printf("B1    %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("B1    %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 if (cpu->ef[0] != 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    cpu->ram[cpu->r[cpu->p]];
+                else
                   cpu->r[cpu->p]++;
                 break;
            case 0x05:                                                      // B2
-                if (trace) printf("B2    %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("B2    %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 if (cpu->ef[1] != 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    cpu->ram[cpu->r[cpu->p]];
+                else
                   cpu->r[cpu->p]++;
                 break;
            case 0x06:                                                      // B3
-                if (trace) printf("B3    %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("B3    %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 if (cpu->ef[2] != 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    cpu->ram[cpu->r[cpu->p]];
+                else
                   cpu->r[cpu->p]++;
                 break;
            case 0x07:                                                      // B4
-                if (trace) printf("B4    %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("B4    %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 if (cpu->ef[3] != 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    cpu->ram[cpu->r[cpu->p]];
+                else
                   cpu->r[cpu->p]++;
                 break;
            case 0x08:                                                      // NBR
-                if (trace) printf("NBR\n");
+                if (showTrace) trace("NBR\n");
                 cpu->r[cpu->p]++;
                 break;
            case 0x09:                                                      // BNQ
-                if (trace) printf("BNQ   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("BNQ   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 if (cpu->q == 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    cpu->ram[cpu->r[cpu->p]];
+                else
                   cpu->r[cpu->p]++;
                 break;
            case 0x0a:                                                      // BNZ
-                if (trace) printf("BNZ   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("BNZ   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 if (cpu->d != 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    cpu->ram[cpu->r[cpu->p]];
+                else
                   cpu->r[cpu->p]++;
                 break;
            case 0x0b:                                                      // BNF
-                if (trace) printf("BNF   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("BNF   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 if (cpu->df == 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    cpu->ram[cpu->r[cpu->p]];
+                else
                   cpu->r[cpu->p]++;
                 break;
            case 0x0c:                                                      // BN1
-                if (trace) printf("BN1   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("BN1   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 if (cpu->ef[0] == 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    cpu->ram[cpu->r[cpu->p]];
+                else
                   cpu->r[cpu->p]++;
                 break;
            case 0x0d:                                                      // BN2
-                if (trace) printf("BN2   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("BN2   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 if (cpu->ef[1] == 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    cpu->ram[cpu->r[cpu->p]];
+                else
                   cpu->r[cpu->p]++;
                 break;
            case 0x0e:                                                      // BN3
-                if (trace) printf("BN3   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("BN3   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 if (cpu->ef[2] == 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    cpu->ram[cpu->r[cpu->p]];
+                else
                   cpu->r[cpu->p]++;
                 break;
            case 0x0f:                                                      // BN4
-                if (trace) printf("BN4   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("BN4   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 if (cpu->ef[3] == 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    cpu->ram[cpu->r[cpu->p]];
+                else
                   cpu->r[cpu->p]++;
                 break;
            }
          break;
     case 4:                                                                // LDA
-         if (trace) printf("LDA   R%X\n",cpu->n);
+         if (showTrace) printf("LDA   R%X\n",cpu->n);
          cpu->d = cpu->ram[cpu->r[cpu->n]++];
          break;
     case 5:                                                                // STR
-         if (trace) printf("STR   R%X\n",cpu->n);
-         cpu->ram[cpu->r[cpu->n]] = cpu->d;
+         if (showTrace) printf("STR   R%X\n",cpu->n);
+         if (cpu->r[cpu->n] >= ramStart && cpu->r[cpu->n] <= ramEnd)
+           cpu->ram[cpu->r[cpu->n]] = cpu->d;
          break;
     case 6:
          switch (cpu->n) {
            case 0x00:                                                      // IRX
-                if (trace) printf("IRX\n");
+                if (showTrace) trace("IRX\n");
                 cpu->r[cpu->x]++;
                 break;
            }
@@ -508,89 +532,90 @@ void cpuCycle(CPU *cpu) {
     case 7:
          switch (cpu->n) {
            case 0x00:                                                      // RET
-                if (trace) printf("RET\n");
+                if (showTrace) trace("RET\n");
                 i = cpu->ram[cpu->r[cpu->x]++];
                 cpu->p = i & 0xf;
                 cpu->x = (i >> 4) & 0xf;
                 cpu->ie = 1;
                 break;
            case 0x01:                                                      // DIS
-                if (trace) printf("DIS\n");
+                if (showTrace) trace("DIS\n");
                 i = cpu->ram[cpu->r[cpu->x]++];
                 cpu->p = i & 0xf;
                 cpu->x = (i >> 4) & 0xf;
                 cpu->ie = 0;
                 break;
            case 0x02:                                                      // LDXA
-                if (trace) printf("LDXA\n");
+                if (showTrace) trace("LDXA\n");
                 cpu->d = cpu->ram[cpu->r[cpu->x]++];
                 break;
            case 0x03:                                                      // STXD
-                if (trace) printf("STXD\n");
+                if (showTrace) trace("STXD\n");
+                if (cpu->r[cpu->x] >= ramStart && cpu->r[cpu->x] <= ramEnd)
                 cpu->ram[cpu->r[cpu->x]--] = cpu->d;
                 break;
            case 0x04:                                                      // ADC
-                if (trace) printf("ADC\n");
+                if (showTrace) trace("ADC\n");
                 w = cpu->d + cpu->ram[cpu->r[cpu->x]] + cpu->df;
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 break;
            case 0x05:                                                      // SDB
-                if (trace) printf("SDB\n");
+                if (showTrace) trace("SDB\n");
                 w = cpu->ram[cpu->r[cpu->x]] + ((~cpu->d) & 0xff) + cpu->df;
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 break;
            case 0x06:                                                      // SHRC
-                if (trace) printf("SHRC\n");
+                if (showTrace) trace("SHRC\n");
                 i = (cpu->d & 1);
                 cpu->d = (cpu->d >> 1) | (cpu->df << 7);
                 cpu->df = i;
                 break;
            case 0x07:                                                      // SMB
-                if (trace) printf("SMB\n");
+                if (showTrace) trace("SMB\n");
                 w = cpu->d + ((~cpu->ram[cpu->r[cpu->x]]) & 0xff) + cpu->df;
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 break;
            case 0x08:                                                      // SAV
-                if (trace) printf("SAV\n");
+                if (showTrace) trace("SAV\n");
                 cpu->ram[cpu->r[cpu->x]] = cpu->t;
                 break;
            case 0x09:                                                      // MARK
-                if (trace) printf("MARK\n");
+                if (showTrace) trace("MARK\n");
                 cpu->t = (cpu->x << 4) | cpu->p;
                 cpu->ram[cpu->r[2]--] = cpu->t;
                 cpu->x = cpu->p;
                 break;
            case 0x0a:                                                      // REQ
-                if (trace) printf("REQ\n");
+                if (showTrace) trace("REQ\n");
                 cpu->q = 0;
                 break;
            case 0x0b:                                                      // SEQ
-                if (trace) printf("SEQ\n");
+                if (showTrace) trace("SEQ\n");
                 cpu->q = 1;
                 break;
            case 0x0c:                                                      // ADCI
-                if (trace) printf("ADCI  %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("ADCI  %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 w = cpu->d + cpu->ram[cpu->r[cpu->p]++] + cpu->df;
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 break;
            case 0x0d:                                                      // SDBI
-                if (trace) printf("SDBI  %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("SDBI  %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 w = cpu->ram[cpu->r[cpu->p]++] + ((~cpu->d) & 0xff) + cpu->df;
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 break;
            case 0x0e:                                                      // SHLC
-                if (trace) printf("SHLC\n");
+                if (showTrace) printf("SHLC\n");
                 i = (cpu->d & 0x80) >> 7;
                 cpu->d = (cpu->d << 1) | cpu->df;
                 cpu->df = i;
                 break;
            case 0x0f:                                                      // SMBI
-                if (trace) printf("SMBI  %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("SMBI  %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 w = cpu->d + ((~cpu->ram[cpu->r[cpu->p]++]) & 0xff) + cpu->df;
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
@@ -598,19 +623,19 @@ void cpuCycle(CPU *cpu) {
            }
          break;
     case 8:                                                                // GLO
-         if (trace) printf("GLO   R%X\n",cpu->n);
+         if (showTrace) printf("GLO   R%X\n",cpu->n);
          cpu->d = cpu->r[cpu->n] & 0xff;
          break;
     case 9:                                                                // GHI
-         if (trace) printf("GHI   R%X\n",cpu->n);
+         if (showTrace) printf("GHI   R%X\n",cpu->n);
          cpu->d = (cpu->r[cpu->n] >> 8) & 0xff;
          break;
     case 0x0a:                                                             // PLO
-         if (trace) printf("PLO   R%X\n",cpu->n);
+         if (showTrace) printf("PLO   R%X\n",cpu->n);
          cpu->r[cpu->n] = (cpu->r[cpu->n] & 0xff00) | cpu->d;
          break;
     case 0x0b:                                                             // PHI
-         if (trace) printf("PHI   R%X\n",cpu->n);
+         if (showTrace) printf("PHI   R%X\n",cpu->n);
          cpu->r[cpu->n] = (cpu->r[cpu->n] & 0x00ff) | (cpu->d << 8);
          break;
     case 0x0c:
@@ -618,10 +643,10 @@ void cpuCycle(CPU *cpu) {
            case 0x00:                                                      // LBR
                 cpu->r[cpu->p] = (cpu->ram[cpu->r[cpu->p]] << 8) |
                                   cpu->ram[cpu->r[cpu->p]+1];
-                if (trace) printf("LBR %04x\n",cpu->r[cpu->p]);
+                if (showTrace) printf("LBR %04x\n",cpu->r[cpu->p]);
                 break;
            case 0x01:                                                      // LBQ
-                if (trace) printf("LBQ   %02X%02X\n",cpu->ram[cpu->r[cpu->p]],cpu->ram[cpu->r[cpu->p]+1]);
+                if (showTrace) printf("LBQ   %02X%02X\n",cpu->ram[cpu->r[cpu->p]],cpu->ram[cpu->r[cpu->p]+1]);
                 if (cpu->q)
                   cpu->r[cpu->p] = (cpu->ram[cpu->r[cpu->p]] << 8) |
                                     cpu->ram[cpu->r[cpu->p]+1];
@@ -629,7 +654,7 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p] += 2;
                 break;
            case 0x02:                                                      // LBZ
-                if (trace) printf("LBZ   %02X%02X\n",cpu->ram[cpu->r[cpu->p]],cpu->ram[cpu->r[cpu->p]+1]);
+                if (showTrace) printf("LBZ   %02X%02X\n",cpu->ram[cpu->r[cpu->p]],cpu->ram[cpu->r[cpu->p]+1]);
                 if (cpu->d == 0)
                   cpu->r[cpu->p] = (cpu->ram[cpu->r[cpu->p]] << 8) |
                                     cpu->ram[cpu->r[cpu->p]+1];
@@ -637,7 +662,7 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p] += 2;
                 break;
            case 0x03:                                                      // LBDF
-                if (trace) printf("LBDF  %02X%02X\n",cpu->ram[cpu->r[cpu->p]],cpu->ram[cpu->r[cpu->p]+1]);
+                if (showTrace) printf("LBDF  %02X%02X\n",cpu->ram[cpu->r[cpu->p]],cpu->ram[cpu->r[cpu->p]+1]);
                 if (cpu->df != 0)
                   cpu->r[cpu->p] = (cpu->ram[cpu->r[cpu->p]] << 8) |
                                     cpu->ram[cpu->r[cpu->p]+1];
@@ -645,26 +670,26 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p] += 2;
                 break;
            case 0x04:                                                      // NOP
-                if (trace) printf("NOP   R%X\n",cpu->n);
+                if (showTrace) trace("NOP");
                 break;
            case 0x05:                                                      // LSNQ
-                if (trace) printf("LSNQ  R%X\n",cpu->n);
+                if (showTrace) printf("LSNQ  R%X\n",cpu->n);
                 if (cpu->q == 0) cpu->r[cpu->p] += 2;
                 break;
            case 0x06:                                                      // LSNZ
-                if (trace) printf("LSNZ  R%X\n",cpu->n);
+                if (showTrace) printf("LSNZ  R%X\n",cpu->n);
                 if (cpu->d != 0) cpu->r[cpu->p] += 2;
                 break;
            case 0x07:                                                      // LSNF
-                if (trace) printf("LSNF  R%X\n",cpu->n);
+                if (showTrace) printf("LSNF  R%X\n",cpu->n);
                 if (cpu->df == 0) cpu->r[cpu->p] += 2;
                 break;
            case 0x08:                                                      // NLBR
-                if (trace) printf("NLBR  R%X\n",cpu->n);
+                if (showTrace) printf("NLBR  R%X\n",cpu->n);
                 cpu->r[cpu->p] += 2;
                 break;
            case 0x09:                                                      // LBNQ
-                if (trace) printf("LBNQ  %02X%02X\n",cpu->ram[cpu->r[cpu->p]],cpu->ram[cpu->r[cpu->p]+1]);
+                if (showTrace) printf("LBNQ  %02X%02X\n",cpu->ram[cpu->r[cpu->p]],cpu->ram[cpu->r[cpu->p]+1]);
                 if (cpu->q == 0)
                   cpu->r[cpu->p] = (cpu->ram[cpu->r[cpu->p]] << 8) |
                                     cpu->ram[cpu->r[cpu->p]+1];
@@ -672,7 +697,7 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p] += 2;
                 break;
            case 0x0a:                                                      // LBNZ
-                if (trace) printf("LBNZ  %02X%02X\n",cpu->ram[cpu->r[cpu->p]],cpu->ram[cpu->r[cpu->p]+1]);
+                if (showTrace) printf("LBNZ  %02X%02X\n",cpu->ram[cpu->r[cpu->p]],cpu->ram[cpu->r[cpu->p]+1]);
                 if (cpu->d != 0)
                   cpu->r[cpu->p] = (cpu->ram[cpu->r[cpu->p]] << 8) |
                                     cpu->ram[cpu->r[cpu->p]+1];
@@ -680,7 +705,7 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p] += 2;
                 break;
            case 0x0b:                                                      // LBNF
-                if (trace) printf("LBNF  %02X%02X\n",cpu->ram[cpu->r[cpu->p]],cpu->ram[cpu->r[cpu->p]+1]);
+                if (showTrace) printf("LBNF  %02X%02X\n",cpu->ram[cpu->r[cpu->p]],cpu->ram[cpu->r[cpu->p]+1]);
                 if (cpu->df == 0)
                   cpu->r[cpu->p] = (cpu->ram[cpu->r[cpu->p]] << 8) |
                                     cpu->ram[cpu->r[cpu->p]+1];
@@ -688,109 +713,109 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p] += 2;
                 break;
            case 0x0c:                                                      // LSIE
-                if (trace) printf("LSIE  R%X\n",cpu->n);
+                if (showTrace) printf("LSIE  R%X\n",cpu->n);
                 if (cpu->ie != 0) cpu->r[cpu->p] += 2;
                 break;
            case 0x0d:                                                      // LSQ
-                if (trace) printf("LSQ   R%X\n",cpu->n);
+                if (showTrace) printf("LSQ   R%X\n",cpu->n);
                 if (cpu->q != 0) cpu->r[cpu->p] += 2;
                 break;
            case 0x0e:                                                      // LSZ
-                if (trace) printf("LSZ   R%X\n",cpu->n);
+                if (showTrace) printf("LSZ   R%X\n",cpu->n);
                 if (cpu->d == 0) cpu->r[cpu->p] += 2;
                 break;
            case 0x0f:                                                      // LSDF
-                if (trace) printf("LSDF  R%X\n",cpu->n);
+                if (showTrace) printf("LSDF  R%X\n",cpu->n);
                 if (cpu->df != 0) cpu->r[cpu->p] += 2;
                 break;
            }
          break;
     case 0x0d:                                                             // SEP
-         if (trace) printf("SEP   R%X\n",cpu->n);
+         if (showTrace) printf("SEP   R%X\n",cpu->n);
          cpu->p = cpu->n;
          break;
     case 0x0e:                                                             // SEX
-         if (trace) printf("SEX   R%X\n",cpu->n);
+         if (showTrace) printf("SEX   R%X\n",cpu->n);
          cpu->x = cpu->n;
          break;
     case 0x0f:
          switch (cpu->n) {
            case 0x00:                                                      // LDX
-                if (trace) printf("LDX\n");
+                if (showTrace) trace("LDX\n");
                 cpu->d = cpu->ram[cpu->r[cpu->x]];
                 break;
            case 0x01:                                                      // OR
-                if (trace) printf("OR\n");
+                if (showTrace) trace("OR\n");
                 cpu->d |= cpu->ram[cpu->r[cpu->x]];
                 break;
            case 0x02:                                                      // AND
-                if (trace) printf("AND\n");
+                if (showTrace) trace("AND\n");
                 cpu->d &= cpu->ram[cpu->r[cpu->x]];
                 break;
            case 0x03:                                                      // XOR
-                if (trace) printf("XOR\n");
+                if (showTrace) trace("XOR\n");
                 cpu->d ^= cpu->ram[cpu->r[cpu->x]];
                 break;
            case 0x04:                                                      // ADD
-                if (trace) printf("ADD\n");
+                if (showTrace) trace("ADD\n");
                 w = cpu->d + cpu->ram[cpu->r[cpu->x]];
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 break;
            case 0x05:                                                      // SD
-                if (trace) printf("SD\n");
+                if (showTrace) trace("SD\n");
                 w = cpu->ram[cpu->r[cpu->x]] + ((~cpu->d) & 0xff) + 1;
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 break;
            case 0x06:                                                      // SHR
-                if (trace) printf("SHR\n");
+                if (showTrace) trace("SHR\n");
                 i = (cpu->d & 1);
                 cpu->d = (cpu->d >> 1);
                 cpu->df = i;
                 break;
            case 0x07:                                                      // SM
-                if (trace) printf("SM\n");
+                if (showTrace) trace("SM\n");
                 w = cpu->d + ((~cpu->ram[cpu->r[cpu->x]]) & 0xff) + 1;
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 break;
            case 0x08:                                                      // LDI
-                if (trace) printf("LDI   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("LDI   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 cpu->d = cpu->ram[cpu->r[cpu->p]++];
                 break;
            case 0x09:                                                      // ORI
-                if (trace) printf("ORI   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("ORI   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 cpu->d |= cpu->ram[cpu->r[cpu->p]++];
                 break;
            case 0x0a:                                                      // ANI
-                if (trace) printf("ANI   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("ANI   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 cpu->d &= cpu->ram[cpu->r[cpu->p]++];
                 break;
            case 0x0b:                                                      // XRI
-                if (trace) printf("XRI   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("XRI   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 cpu->d ^= cpu->ram[cpu->r[cpu->p]++];
                 break;
            case 0x0c:                                                      // ADI
-                if (trace) printf("ADI   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("ADI   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 w = cpu->d + cpu->ram[cpu->r[cpu->p]++];
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 break;
            case 0x0d:                                                      // SDI
-                if (trace) printf("SDI   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("SDI   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 w = cpu->ram[cpu->r[cpu->p]++] + ((~cpu->d) & 0xff) + 1;
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 break;
            case 0x0e:                                                      // SHL
-                if (trace) printf("SHL\n");
+                if (showTrace) trace("SHL\n");
                 i = (cpu->d & 0x80) >> 7;
                 cpu->d = (cpu->d << 1);
                 cpu->df = i;
                 break;
            case 0x0f:                                                      // SMI
-                if (trace) printf("SMI   %02X\n",cpu->ram[cpu->r[cpu->p]]);
+                if (showTrace) printf("SMI   %02X\n",cpu->ram[cpu->r[cpu->p]]);
                 w = cpu->d + ((~cpu->ram[cpu->r[cpu->p]++]) & 0xff) + 1;
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;

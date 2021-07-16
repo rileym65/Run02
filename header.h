@@ -36,10 +36,13 @@ typedef struct {
 LINK CPU  cpu;
 LINK byte runFlag;
 LINK byte useElfos;
-LINK byte trace;
+LINK byte showTrace;
+LINK word ramStart;
+LINK word ramEnd;
 LINK struct termios original;
 
 extern int loader(char* filename);
+extern void trace(char* message);
 
 #endif
 

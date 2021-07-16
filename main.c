@@ -17,12 +17,14 @@ int main(int argc, char** argv) {
     }
   useElfos = 0;
   exec = 0xffff;
-  trace = 0;
+  showTrace = 0;
   args = -1;
+  ramStart = 0x0000;
+  ramEnd = 0xefff;
   i = 1;
   while (i < argc) {
     if (strcmp(argv[i],"-elfos") == 0) useElfos = 0xff;
-    else if (strcmp(argv[i],"-t") == 0) trace = 0xff;
+    else if (strcmp(argv[i],"-t") == 0) showTrace = 0xff;
     else if (strcmp(argv[i],"-a") == 0) {
       i++;
       args = i;
@@ -47,7 +49,8 @@ int main(int argc, char** argv) {
     }
   
   if (useElfos) {
-    cpu.ram[0x442] = 0x7f; cpu.ram[0x443] = 0xff;
+    cpu.ram[0x442] = (ramEnd & 0xff00) >> 8;
+    cpu.ram[0x443] = (ramEnd & 0x00ff);
     cpu.ram[0x300] = 0x00;
     cpu.ram[0x303] = 0x00;
     cpu.ram[0x330] = 0xc0; cpu.ram[0x331] = 0x04; cpu.ram[0x332] = 0x44;
