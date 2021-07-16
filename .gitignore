@@ -2,4 +2,5 @@ run02
 *.o
 *.bas
 *.prg
+*.bin
 

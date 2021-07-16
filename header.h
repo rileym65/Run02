@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <termios.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 typedef u_int16_t word;
 typedef u_int8_t byte;
@@ -33,6 +35,8 @@ typedef struct {
 
 LINK CPU  cpu;
 LINK byte runFlag;
+LINK byte useElfos;
+LINK byte trace;
 LINK struct termios original;
 
 extern int loader(char* filename);
