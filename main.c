@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
   showTrace = 0;
   args = -1;
   ramStart = 0x0000;
-  ramEnd = 0xefff;
+  ramEnd = 0x7fff;
   i = 1;
   while (i < argc) {
     if (strcmp(argv[i],"-elfos") == 0) useElfos = 0xff;
