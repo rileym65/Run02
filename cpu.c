@@ -15,6 +15,7 @@ void cpuReset(CPU *cpu) {
 
 void sret(CPU *cpu) {
   cpu->r[3] = cpu->r[6];
+  cpu->x = 2;
   cpu->r[cpu->x]++;
   cpu->r[6] = (cpu->ram[cpu->r[cpu->x]++]);
   cpu->r[6] |= ((cpu->ram[cpu->r[cpu->x]]) << 8);
@@ -194,6 +195,7 @@ void cpuCycle(CPU *cpu) {
          break;
     case 0xfa7b:                                                           // call
          if (showTrace) printf("CALL  SCALL %02X%02X\n",cpu->ram[cpu->r[3]],cpu->ram[cpu->r[3]+1]);
+         cpu->x = 2;
          cpu->ram[cpu->r[cpu->x]--] = ((cpu->r[6] >> 8) & 0xff);
          cpu->ram[cpu->r[cpu->x]--] = (cpu->r[6] & 0xff);
          cpu->r[6] = cpu->r[3];
@@ -205,6 +207,7 @@ void cpuCycle(CPU *cpu) {
          break;
     case 0xfa8d:                                                           // ret
          if (showTrace) trace("CALL  SRET\n");
+         cpu->x = 2;
          cpu->r[3] = cpu->r[6];
          cpu->r[cpu->x]++;
          cpu->r[6] = (cpu->ram[cpu->r[cpu->x]++]);
@@ -465,7 +468,6 @@ void cpuCycle(CPU *cpu) {
              i++;
              }
            if (f != 0 && (cpu->ram[w] & 0x7f) == cpu->ram[cpu->r[0xf]+i]) {
-printf("Token found: %02x\n",cpu->r[0xd]);
              cpu->df = 1;
              cpu->r[0xf] += i+1;
              sret(cpu);
@@ -474,7 +476,6 @@ printf("Token found: %02x\n",cpu->r[0xd]);
            w++;
            cpu->r[0xd]++;
            }
-printf("Token not found\n");
          cpu->df = 0;
          sret(cpu);
          return;
@@ -554,6 +555,7 @@ printf("Token not found\n");
     exit(1);
     }
   i = cpu->ram[cpu->r[cpu->p]++];
+  imap[i]++;
   cpu->n = i & 0xf;
   cpu->i = (i >> 4) & 0xff;
   switch (cpu->i) {
@@ -565,7 +567,7 @@ printf("Token not found\n");
          else {
            cpu->d = cpu->ram[cpu->r[cpu->n]];
            if (showTrace) {
-             sprintf(tbuffer,"LDN   R%X             D=%02x\n",cpu->n,cpu->d);
+             sprintf(tbuffer,"LDN   R%X             D=%02x [%04x]\n",cpu->n,cpu->d,cpu->r[cpu->n]);
              trace(tbuffer);
              }
            }
@@ -780,7 +782,6 @@ printf("Token not found\n");
                   }
                 break;
            case 0x05:                                                      // SDB
-                if (showTrace) trace("SDB\n");
                 w = cpu->ram[cpu->r[cpu->x]] + ((~cpu->d) & 0xff) + cpu->df;
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;

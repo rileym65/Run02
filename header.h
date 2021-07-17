@@ -36,9 +36,11 @@ typedef struct {
 LINK CPU  cpu;
 LINK byte runFlag;
 LINK byte useElfos;
+LINK byte showMap;
 LINK byte showTrace;
 LINK word ramStart;
 LINK word ramEnd;
+LINK int  imap[256];
 LINK struct termios original;
 
 extern int loader(char* filename);

@@ -15,9 +15,11 @@ int main(int argc, char** argv) {
     printf("Usage: run02 filename\n");
     exit(1);
     }
+  for (i=0; i<256; i++) imap[i] = 0;
   useElfos = 0;
   exec = 0xffff;
   showTrace = 0;
+  showMap = 0;
   args = -1;
   ramStart = 0x0000;
   ramEnd = 0x7fff;
@@ -82,7 +84,6 @@ int main(int argc, char** argv) {
   runFlag = 0xff;
   cpuReset(&cpu);
   if (useElfos && exec != 0xffff) {
-printf("Elf/Os program start: %04x\n",exec);
     cpu.p = 3;
     cpu.x = 2;
     cpu.r[3] = exec;
@@ -98,6 +99,17 @@ printf("Elf/Os program start: %04x\n",exec);
     }
   if (tcsetattr(0,TCSANOW,&original) != 0) {
     printf("Could not restore terminal attributes\n");
+    }
+
+  if (showMap) {
+    printf("     0  1  2  3  4  5  6  7    8  9  A  B  C  D  E  F\n");
+    printf("0   ");
+    for (i=0; i<256; i++) {
+      if (imap[i] > 0) printf(" * ");
+        else printf (" . ");
+      if ((i+1)%8 == 0) printf("  ");
+      if ((i+1)%16 == 0) printf("\n%X   ",(i+1)/16);
+      }
     }
   }
 
