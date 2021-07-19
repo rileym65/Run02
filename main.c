@@ -22,10 +22,11 @@ int main(int argc, char** argv) {
   showMap = 0;
   args = -1;
   ramStart = 0x0000;
-  ramEnd = 0x7fff;
+  ramEnd = 0xefff;
   i = 1;
   while (i < argc) {
     if (strcmp(argv[i],"-elfos") == 0) useElfos = 0xff;
+    else if (strcmp(argv[i],"-e") == 0) useElfos = 0xff;
     else if (strcmp(argv[i],"-t") == 0) showTrace = 0xff;
     else if (strcmp(argv[i],"-a") == 0) {
       i++;

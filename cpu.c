@@ -218,7 +218,7 @@ void cpuCycle(CPU *cpu) {
          break;
     case 0xff03:                                                           // f_type
          if (showTrace) trace("CALL  F_TYPE\n");
-         if (cpu->d == 0x0c) printf("\e[2J");
+         if (cpu->d == 0x0c) printf("\e[2J\e[1;1H");
            else printf("%c",cpu->d);
          fflush(stdout);
          sret(cpu);
@@ -248,7 +248,8 @@ void cpuCycle(CPU *cpu) {
                strcat(tbuffer,buffer);
                }
              }
-           printf("%c",i);
+           if (i==0xc) printf("\e[2J\e[1;1H");
+             else printf("%c",i);
            i = cpu->ram[cpu->r[0xf]++];
            }
          if (showTrace) {
@@ -444,7 +445,8 @@ void cpuCycle(CPU *cpu) {
                strcat(tbuffer,buffer);
                }
              }
-           printf("%c",i);
+           if (i == 0xc) printf("\e[2J\e[1;1H");
+             else printf("%c",i);
            i = cpu->ram[cpu->r[6]++];
            }
          if (showTrace) {

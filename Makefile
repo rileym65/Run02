@@ -21,6 +21,10 @@ clean:
 	-rm *.o
 	-rm $(PROJECT)
 
+install:
+	cp run02 /usr/local/bin
+	chmod a+x /usr/local/bin/run02
+
 cpu.o:           header.h cpu.c
 loader.o:        header.h loader.c
 main.o:          header.h main.c
