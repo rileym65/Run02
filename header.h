@@ -31,16 +31,31 @@ typedef struct {
   byte ef[4];
   byte idle;
   byte ram[65536];
+  byte ci;
+  byte xi;
+  byte cie;
+  byte xie;
+  byte cmode;
+  byte crunning;
+  byte cntr;
+  byte ch;
+  byte etq;
+  byte cpre;
   } CPU;
 
 LINK CPU  cpu;
+LINK int  cycles;
+LINK long long icount;
 LINK byte runFlag;
+LINK byte use1805;
 LINK byte useElfos;
+LINK byte elfos4;
 LINK byte showMap;
 LINK byte showTrace;
 LINK word ramStart;
 LINK word ramEnd;
 LINK int  imap[256];
+LINK double freq;
 LINK struct termios original;
 
 extern int loader(char* filename);

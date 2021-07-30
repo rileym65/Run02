@@ -8,6 +8,9 @@ int main(int argc, char** argv) {
   word addr;
   word size;
   word exec;
+  struct timeval startTime;
+  struct timeval endTime;
+  long long st,et;
   int  args;
   char buffer[256];
   struct termios terminal;
@@ -16,8 +19,12 @@ int main(int argc, char** argv) {
     exit(1);
     }
   for (i=0; i<256; i++) imap[i] = 0;
+  use1805 = 0;
   useElfos = 0;
+  elfos4 = 0;
   exec = 0xffff;
+  icount = 0;
+  freq = 0;
   showTrace = 0;
   showMap = 0;
   args = -1;
@@ -27,7 +34,15 @@ int main(int argc, char** argv) {
   while (i < argc) {
     if (strcmp(argv[i],"-elfos") == 0) useElfos = 0xff;
     else if (strcmp(argv[i],"-e") == 0) useElfos = 0xff;
+    else if (strcmp(argv[i],"-1805") == 0) use1805 = 0xff;
+    else if (strcmp(argv[i],"-4") == 0) { useElfos = 0xff; elfos4 = 0xff; }
     else if (strcmp(argv[i],"-t") == 0) showTrace = 0xff;
+    else if (strcmp(argv[i],"-c") == 0) {
+      i++;
+      freq = atof(argv[i]);
+      freq = 1/(freq/8);
+printf("freq=%f\n",freq);
+      }
     else if (strcmp(argv[i],"-a") == 0) {
       i++;
       args = i;
@@ -68,6 +83,18 @@ int main(int argc, char** argv) {
     cpu.ram[0x454] = 0xc0; cpu.ram[0x455] = 0xff; cpu.ram[0x456] = 0x06;
     cpu.ram[0x457] = 0xc0; cpu.ram[0x458] = 0xff; cpu.ram[0x459] = 0x0f;
     cpu.ram[0x80] = 0;
+    if (elfos4) {
+      cpu.ram[0x468] = (ramEnd - 255) >> 8;
+      cpu.ram[0x469] = (ramEnd - 255);
+      cpu.ram[0x442] = ((ramEnd-256) & 0xff00) >> 8;
+      cpu.ram[0x443] = ((ramEnd-256) & 0x00ff);
+      cpu.ram[0x465] = 0x40;
+      cpu.ram[0x466] = 0x00;
+      cpu.ram[ramEnd - 255] = 0x06;
+      cpu.ram[ramEnd - 254] = 0x00;
+      cpu.ram[ramEnd - 253] = 0xfc;
+      cpu.ram[ramEnd] = 0;
+      }
     if (args >= 0) {
       for (i=0; i<strlen(argv[args]); i++) {
         cpu.ram[0x80+i] = argv[args][i];
@@ -75,6 +102,8 @@ int main(int argc, char** argv) {
         }
       }
     }
+
+  printf("\n");
 
   tcgetattr(0,&terminal);
   original = terminal;
@@ -94,15 +123,26 @@ int main(int argc, char** argv) {
     cpu.r[4] = 0xfa7b;
     cpu.r[5] = 0xfa8d;
     cpu.r[2] = 0x1ffd;
+    if (elfos4) {
+      cpu.r[2] = ramEnd - 4;
+      }
     cpu.r[0xa] = 0x80;
     }
+  gettimeofday(&startTime, NULL);
   while (runFlag) {
     cpuCycle(&cpu);
     if (cpu.idle) runFlag = 0;
     }
+  gettimeofday(&endTime, NULL);
   if (tcsetattr(0,TCSANOW,&original) != 0) {
     printf("Could not restore terminal attributes\n");
     }
+
+  st = startTime.tv_sec * 1000000 + startTime.tv_usec;
+  et = endTime.tv_sec * 1000000 + endTime.tv_usec;
+  printf("Instructions executed: %ld\n",icount);
+  printf("Run time             : %f\n",(et-st)/1000000.0);
+  printf("Instructions/second  : %f\n",icount/((et-st)/1000000.0));
 
   if (showMap) {
     printf("     0  1  2  3  4  5  6  7    8  9  A  B  C  D  E  F\n");

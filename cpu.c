@@ -1,16 +1,40 @@
 #include "header.h"
 
+char tbuffer[256];
+
+#define T_COUNT1      1
+#define T_COUNT2      2
+#define T_PULSE1      3
+#define T_PULSE2      4
+#define T_TIMER       5
 
 void cpuReset(CPU *cpu) {
   cpu->p = 0;
   cpu->x = 0;
   cpu->r[0] = 0;
-  cpu->ie = 0;
+  cpu->ie = 1;
   cpu->idle = 0;
   cpu->ef[0] = 0;
   cpu->ef[1] = 0;
   cpu->ef[2] = 0;
   cpu->ef[3] = 0;
+  cpu->ci = 0;
+  cpu->xi = 0;
+  cpu->cie = 1;
+  cpu->xie = 1;
+  cpu->crunning = 0;
+  cpu->etq = 0;
+  cpu->cpre = 0;
+  }
+
+void cpuIntr(CPU* cpu, char typ) {
+  if (cpu->ie == 0) return;
+  if (typ == 'C' && cpu->cie == 0) return;
+  if (typ == 'E' && cpu->xie == 0) return;
+  cpu->t = (cpu->x << 4) | cpu->p;
+  cpu->x = 2;
+  cpu->p = 1;
+  cpu->ie = 0;
   }
 
 void sret(CPU *cpu) {
@@ -23,6 +47,354 @@ void sret(CPU *cpu) {
   cpu->r[5] = 0xfa8d;
   }
 
+byte bcdAdd(CPU* cpu,byte a, byte b, byte c) {
+  cpu->d = a+b;
+  cpu->df = 0;
+  if (c != 0) cpu->d++;
+  if ((cpu->d & 0x0f) >= 0x0a || ((cpu->d & 0x0f) < (a & 0x0f))) cpu->d += 0x06;
+  if ((cpu->d & 0xf0) >= 0xa0 || ((cpu->d & 0xf0) < (a & 0xf0))) { cpu->d += 0x60; cpu->df = 1; }
+  if ((cpu->d & 0xf0) < (a & 0xf0)) cpu->df = 1;
+  cycles++;
+  }
+
+
+void bcdSub(CPU* cpu,byte a, byte b, byte c) {
+  b = 0x99 - b;
+  if (b & 0x0f != 9) b++;
+  else b = (b & 0xf0) + 0x10;
+  c = (c == 0) ? 1 : 0;
+  bcdAdd(cpu, a, b, c);
+  }
+
+void cpu1805(CPU *cpu) {
+  byte i;
+  word d;
+  word a;
+  i = cpu->ram[cpu->r[cpu->p]++];
+  cpu->n = i & 0xf;
+  cpu->i = (i >> 4) & 0xff;
+  cycles++;
+  switch (cpu->i) {
+    case 0x00:
+         switch (cpu->n) {
+           case 0x00:                                                      // STPC
+                cpu->crunning = 0;
+                cpu->cpre = 0;
+                if (showTrace) {
+                  sprintf(tbuffer,"STPC\n");
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x01:                                                      // DTC
+                cpu->cntr--;
+                if (showTrace) {
+                  sprintf(tbuffer,"DTC\n");
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x02:                                                      // SPM2
+                cpu->cmode = T_PULSE2;
+                cpu->cpre = 0;
+                cpu->crunning = 0xff;
+                if (showTrace) {
+                  sprintf(tbuffer,"SPM2\n");
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x03:                                                      // SCM2
+                cpu->cmode = T_COUNT2;
+                cpu->cpre = 0;
+                cpu->crunning = 0xff;
+                if (showTrace) {
+                  sprintf(tbuffer,"SCM2\n");
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x04:                                                      // SPM1
+                cpu->cmode = T_PULSE1;
+                cpu->cpre = 0;
+                cpu->crunning = 0xff;
+                if (showTrace) {
+                  sprintf(tbuffer,"SPM1\n");
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x05:                                                      // SCM1
+                cpu->cmode = T_COUNT1;
+                cpu->cpre = 0;
+                cpu->crunning = 0xff;
+                if (showTrace) {
+                  sprintf(tbuffer,"SCM1\n");
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x06:                                                      // LDC
+                if (cpu->crunning) {
+                  cpu->ch = cpu->d;
+                  }
+                else {
+                  cpu->cntr = cpu->d;
+                  cpu->ch = cpu->d;
+                  cpu->ci = 0;
+                  }
+                if (showTrace) {
+                  sprintf(tbuffer,"LDC\n");
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x07:                                                      // STM
+                cpu->cmode = T_TIMER;
+                cpu->cpre = 0;
+                cpu->crunning = 0xff;
+                if (showTrace) {
+                  sprintf(tbuffer,"STM\n");
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x08:                                                      // GEC
+                cpu->d = cpu->cntr;
+                if (showTrace) {
+                  sprintf(tbuffer,"GEC                    D=%02x\n",cpu->d);
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x09:                                                      // ETQ
+                cpu->etq = 1;
+                break;
+                if (showTrace) {
+                  sprintf(tbuffer,"ETQ\n");
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x0a:                                                      // XIE
+                cpu->xie = 1;
+                break;
+                if (showTrace) {
+                  sprintf(tbuffer,"XIE\n");
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x0b:                                                      // XID
+                cpu->xie = 0;
+                break;
+                if (showTrace) {
+                  sprintf(tbuffer,"XID\n");
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x0c:                                                      // CIE
+                cpu->cie = 1;
+                break;
+                if (showTrace) {
+                  sprintf(tbuffer,"CIE\n");
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x0d:                                                      // CID
+                cpu->cie = 0;
+                break;
+                if (showTrace) {
+                  sprintf(tbuffer,"CID\n");
+                  trace(tbuffer);
+                  }
+                break;
+           }
+         break;
+    case 0x02:                                                             // DBNZ
+         cpu->r[cpu->n]--;
+         d = cpu->ram[cpu->r[cpu->p]++] << 8;
+         d |= cpu->ram[cpu->r[cpu->p]++];
+         cycles += 2;
+         if (showTrace) {
+           sprintf(tbuffer,"DBNZ  R%X,%04X        R%X=%04x ",cpu->n,d,cpu->n,cpu->r[cpu->n]);
+           }
+         if (cpu->r[cpu->n] != 0) {
+           cpu->r[cpu->p] = d;
+           if (showTrace) strcat(tbuffer,"*\n");
+           }
+         else {
+           if (showTrace) strcat(tbuffer,"\n");
+           }
+         if (showTrace) trace(tbuffer);
+         break;
+    case 0x03:
+         switch (cpu->n) {
+           case 0x0e:                                                      // BCI
+                d = cpu->ram[(cpu->r[cpu->p]+1) & 0xffff];
+                if (showTrace) {
+                  sprintf(tbuffer,"BCI   %02X             ",d);
+                  }
+                if (cpu->ci) {
+                  cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) | (d & 0x00ff);
+                  cpu->ci = 0;
+                  if (showTrace) strcat(tbuffer,"*\n");
+                  }
+                else {
+                  cpu->r[cpu->p]++;
+                  if (showTrace) strcat(tbuffer,"\n");
+                  }
+                if (showTrace) trace(tbuffer);
+                break;
+           case 0x0f:                                                      // BXI
+                d = cpu->ram[(cpu->r[cpu->p]+1) & 0xffff];
+                if (showTrace) {
+                  sprintf(tbuffer,"BXI   %02X             ",d);
+                  }
+                if (cpu->xi) {
+                  cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) | (d & 0x00ff);
+                  cpu->xi = 0;
+                  if (showTrace) strcat(tbuffer,"*\n");
+                  }
+                else {
+                  cpu->r[cpu->p]++;
+                  if (showTrace) strcat(tbuffer,"\n");
+                  }
+                if (showTrace) trace(tbuffer);
+                break;
+           }
+           break;
+    case 0x06:                                                             // RLXA
+         cpu->r[cpu->n] = cpu->ram[cpu->r[cpu->x]++] << 8;
+         cpu->r[cpu->n] |= cpu->ram[cpu->r[cpu->x]++];
+         cycles += 2;
+         if (showTrace) {
+           sprintf(tbuffer,"RLXA  R%X             R%X=%04x\n",cpu->n,cpu->n,cpu->r[cpu->n]);
+           trace(tbuffer);
+           }
+         break;
+    case 0x07:
+         switch (cpu->i) {
+           case 0x04:                                                      // DADC
+                bcdAdd(cpu, cpu->d, cpu->ram[cpu->r[cpu->x]], cpu->df);
+                if (showTrace) {
+                  sprintf(tbuffer,"DADC                   D=%02x\n",cpu->d);
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x06:                                                      // DSAV
+                cpu->r[cpu->x]--;
+                cpu->ram[cpu->r[cpu->x]] = cpu->t;
+                cpu->r[cpu->x]--;
+                cpu->ram[cpu->r[cpu->x]] = cpu->d;
+                cpu->r[cpu->x]--;
+                cpu->d <<= 1;
+                if (cpu->df != 0) cpu->d |= 1;
+                cpu->ram[cpu->r[cpu->x]] = cpu->d;
+                cycles += 3;
+                if (showTrace) {
+                  sprintf(tbuffer,"DSAV\n");
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x07:                                                      // DSMB
+                bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->x]], cpu->df);
+                if (showTrace) {
+                  sprintf(tbuffer,"DSMB                   D=%02x\n",cpu->d);
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x0c:                                                      // DACI
+                bcdAdd(cpu, cpu->d, cpu->ram[cpu->r[cpu->p]++], cpu->df);
+                if (showTrace) {
+                  sprintf(tbuffer,"DACI                   D=%02x\n",cpu->d);
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x0f:                                                      // DSBI
+                bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->p]++], cpu->df);
+                if (showTrace) {
+                  sprintf(tbuffer,"DSBI                   D=%02x\n",cpu->d);
+                  trace(tbuffer);
+                  }
+                break;
+           }
+         break;
+    case 0x08:                                                             // SCAL
+         cpu->ram[cpu->r[cpu->x]--] = (cpu->r[cpu->n] & 0x00ff);
+         cpu->ram[cpu->r[cpu->x]--] = ((cpu->r[cpu->n] & 0xff00) >> 8);
+         cpu->r[cpu->n] = cpu->r[cpu->p];
+         d = (cpu->ram[cpu->r[cpu->n]++] << 8);
+         d |= cpu->ram[cpu->r[cpu->n]++];
+         cpu->r[cpu->p] = d;
+         cycles += 7;
+         if (showTrace) {
+           sprintf(tbuffer,"SCAL  R%X,%04X\n",cpu->n,d);
+           trace(tbuffer);
+           }
+         break;
+    case 0x09:                                                             // SRET
+         cpu->r[cpu->p] = cpu->r[cpu->n];
+         cpu->r[cpu->x]++;
+         cpu->r[cpu->n] = (cpu->ram[cpu->r[cpu->x]] << 8);
+         cpu->r[cpu->x]++;
+         cpu->r[cpu->n] |= cpu->ram[cpu->r[cpu->x]];
+         cycles += 5;
+         if (showTrace) {
+           sprintf(tbuffer,"SRET  R%X\n",cpu->n);
+           trace(tbuffer);
+           }
+         break;
+    case 0x0a:                                                             // RSXD
+         cpu->ram[cpu->r[cpu->x]--] = (cpu->r[cpu->n] >> 8);
+         cpu->ram[cpu->r[cpu->x]--] - (cpu->r[cpu->n] & 0xff);
+         cycles += 2;
+         if (showTrace) {
+           sprintf(tbuffer,"RSXD  R%X             M[X]=%04x\n",cpu->n,cpu->r[cpu->n]);
+           trace(tbuffer);
+           }
+         break;
+    case 0x0b:                                                             // RNX
+         cpu->r[cpu->x] = cpu->r[cpu->n];
+         cycles++;
+         if (showTrace) {
+           sprintf(tbuffer,"RNX   R%X             R%X=%04x\n",cpu->x,cpu->x,cpu->r[cpu->x]);
+           trace(tbuffer);
+           }
+         break;
+    case 0x0c:                                                             // RLDI
+         cpu->r[cpu->n] = cpu->ram[cpu->r[cpu->p]++] << 8;
+         cpu->r[cpu->n] |= cpu->ram[cpu->r[cpu->p]++];
+         cycles += 2;
+         if (showTrace) {
+           sprintf(tbuffer,"RLDI  R%X             R%X=%04x\n",cpu->n,cpu->n,cpu->r[cpu->n]);
+           trace(tbuffer);
+           }
+         break;
+    case 0x0f:
+         switch (cpu->n) {
+           case 0x04:                                                      // DADD
+                bcdAdd(cpu, cpu->d, cpu->ram[cpu->r[cpu->x]], 0);
+                if (showTrace) {
+                  sprintf(tbuffer,"DADD                   D=%02x\n",cpu->d);
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x07:                                                      // DSM
+                bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->x]], 0);
+                if (showTrace) {
+                  sprintf(tbuffer,"DSM                    D=%02x\n",cpu->d);
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x0c:                                                      // DADI
+                bcdAdd(cpu, cpu->d, cpu->ram[cpu->r[cpu->p]++], 0);
+                if (showTrace) {
+                  sprintf(tbuffer,"DADI                   D=%02x\n",cpu->d);
+                  trace(tbuffer);
+                  }
+                break;
+           case 0x0f:                                                      // DSMI
+                bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->p]++], 0);
+                if (showTrace) {
+                  sprintf(tbuffer,"DSMI                   D=%02x\n",cpu->d);
+                  trace(tbuffer);
+                  }
+                break;
+           }
+         break;
+    }
+  }
+
 void cpuCycle(CPU *cpu) {
   byte i;
   word d;
@@ -30,9 +402,12 @@ void cpuCycle(CPU *cpu) {
   int  f;
   int  flags;
   int  p;
+  int  cycles;
   char buffer[32];
   char buffer2[2];
-  char tbuffer[256];
+  struct timeval tv;
+  long long st;
+  long long et;
   word w;
   if (showTrace) {
     sprintf(tbuffer,"R%x:[%04x] ",cpu->p,cpu->r[cpu->p],cpu->ram[cpu->r[cpu->p]]);
@@ -178,6 +553,10 @@ void cpuCycle(CPU *cpu) {
       case 0x0324:                                                         // o_chdir
            break;
       case 0x0327:                                                         // o_rmdir
+           break;
+      case 0x036c:                                                         // o_alloc
+           break;
+      case 0x036f:                                                         // o_dealloc
            break;
       }
 //    if (cpu->r[cpu->p] < 0x2000) {
@@ -351,7 +730,7 @@ void cpuCycle(CPU *cpu) {
          break;
     case 0xff48:                                                           // f_hexout2
          if (showTrace) trace("CALL  F_HEXOUT2\n");
-         sprintf(buffer,"%02x",(cpu->r[0xd] & 0xff));
+         sprintf(buffer,"%02X",(cpu->r[0xd] & 0xff));
          for (i=0; i<strlen(buffer); i++)
            cpu->ram[cpu->r[0xf]++] = buffer[i];
          sret(cpu);
@@ -359,7 +738,7 @@ void cpuCycle(CPU *cpu) {
          break;
     case 0xff4b:                                                           // f_hexout4
          if (showTrace) trace("CALL  F_HEXOUT4\n");
-         sprintf(buffer,"%04x",cpu->r[0xd]);
+         sprintf(buffer,"%04X",cpu->r[0xd]);
          for (i=0; i<strlen(buffer); i++)
            cpu->ram[cpu->r[0xf]++] = buffer[i];
          sret(cpu);
@@ -560,6 +939,18 @@ void cpuCycle(CPU *cpu) {
   imap[i]++;
   cpu->n = i & 0xf;
   cpu->i = (i >> 4) & 0xff;
+  if (freq != 0) {
+    cycles = (cpu->i != 0xc) ? 2 : 3;
+    gettimeofday(&tv,NULL);
+    st = tv.tv_sec * 1000000 + tv.tv_usec;
+    et = st;
+    while (et-st < cycles * freq) {
+      gettimeofday(&tv,NULL);
+      et = tv.tv_sec * 1000000 + tv.tv_usec;
+      }
+    }
+  icount++;
+  cycles = 2;
   switch (cpu->i) {
     case 0:                                                                // LDN
          if (cpu->n == 0) {                                                // IDL
@@ -740,6 +1131,9 @@ void cpuCycle(CPU *cpu) {
                   trace(tbuffer);
                   }
                 break;
+           case 0x08:                                                      // 1805 inst
+                if (use1805) cpu1805(cpu);
+                break;
            }
          break;
     case 7:
@@ -898,6 +1292,7 @@ void cpuCycle(CPU *cpu) {
            }
          break;
     case 0x0c:
+         cycles++;
          switch (cpu->n) {
            case 0x00:                                                      // LBR
                 cpu->r[cpu->p] = (cpu->ram[cpu->r[cpu->p]] << 8) |
@@ -1181,5 +1576,23 @@ void cpuCycle(CPU *cpu) {
            }
          break;
     }
+  if (use1805 && cpu->crunning && cpu->cmode == T_TIMER) {
+    while (cycles > 0) {
+      if (cpu->cpre == 0) cpu->cpre = 31;
+      else {
+        cpu->cpre--;
+        if (cpu->cpre == 0) {
+          if (cpu->cntr == 0) cpu->cntr = 255;
+          else {
+            cpu->cntr--;
+            if (cpu->cntr == 0) {
+              cpu->ci = 0xff;
+              }
+            }
+          }
+        }
+      }
+    }
+  if (use1805 && cpu->ci != 0 && cpu->ie != 0) cpuIntr(cpu, 'C');
   }
 
