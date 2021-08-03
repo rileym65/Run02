@@ -37,6 +37,14 @@ void cpuIntr(CPU* cpu, char typ) {
   cpu->ie = 0;
   }
 
+void cpuDmaIn(CPU* cpu, byte v) {
+  cpu->ram[cpu->r[0]++] = v;
+  }
+
+byte cpuDmaOut(CPU* cpu) {
+  return cpu->ram[cpu->r[0]++];
+  }
+
 void sret(CPU *cpu) {
   cpu->r[3] = cpu->r[6];
   cpu->x = 2;
@@ -395,6 +403,86 @@ void cpu1805(CPU *cpu) {
     }
   }
 
+void doAlloc(CPU* cpu) {
+  word addr;
+  word heap;
+  word size;
+  byte flags;
+  byte flag;
+  word mask;
+  heap = (cpu->ram[0x468] << 8) | cpu->ram[0x469];
+  if ((cpu->r[7] & 0xff00) != 0) {
+    mask = (cpu->r[7] & 0xff00) >> 8;
+    mask = mask ^ 0xffff;
+    addr = heap - cpu->r[0xc];
+    addr &= mask;
+    size = heap - addr;
+    heap = addr - 3;
+    cpu->ram[heap] = 2 | (cpu->r[7] & 0x00ff);
+    cpu->ram[heap+1] = (size & 0xff00) >> 8;
+    cpu->ram[heap+2] = (size & 0x00ff);
+    cpu->r[0xf] = addr;
+    cpu->df = 0;
+    cpu->r[0xc] = size;
+    cpu->ram[0x468] = (heap & 0xff00) >> 8;
+    cpu->ram[0x469] = (heap & 0x00ff);
+    heap--;
+    cpu->ram[0x442] = (heap & 0xff00) >> 8;
+    cpu->ram[0x443] = (heap & 0x00ff);
+    return;
+    }
+  else {
+    flag = 0;
+    while (flag == 0) {
+      flags = cpu->ram[heap++];
+      size  = cpu->ram[heap++] << 8;
+      size |= cpu->ram[heap++];
+      if (flags == 0) flag = 0xff;
+      else if (flags == 1 && cpu->r[0xc] <= size) {
+        addr = heap;
+        cpu->ram[heap-3] = 2 | (cpu->r[7] & 0xff);
+        cpu->r[0xf] = addr;
+        if (size - cpu->r[0xc] >= 11) {
+          cpu->ram[heap-2] = (cpu->r[0xc] & 0xff00) >> 8;
+          cpu->ram[heap-1] = (cpu->r[0xc] & 0x00ff);
+          heap = addr + cpu->r[0xc];
+          size = size - (cpu->r[0xc] + 3);
+          cpu->ram[heap++] = 0x01;
+          cpu->ram[heap++] = (size & 0xff00) >> 8;
+          cpu->ram[heap] = (size & 0x00ff);
+          cpu->df = 0;
+          return;
+          }
+        cpu->r[0xc] = size;
+        cpu->df = 0;
+        return;
+        }
+      else {
+        heap += size;
+        }
+      }
+    heap = (cpu->ram[0x468] << 8) | cpu->ram[0x469];
+    heap -= (cpu->r[0xc] + 3);
+    cpu->ram[heap] = 2 | (cpu->r[7] & 0xff);
+    cpu->ram[heap+1] = (cpu->r[0xc] & 0xff00) >> 8;
+    cpu->ram[heap+2] = (cpu->r[0xc] & 0x00ff);
+    cpu->r[0xf] = heap+3;
+    cpu->df = 0;
+    cpu->ram[0x468] = (heap & 0xff00) >> 8;
+    cpu->ram[0x469] = (heap & 0x00ff);
+    heap--;
+    cpu->ram[0x442] = (heap & 0xff00) >> 8;
+    cpu->ram[0x443] = (heap & 0x00ff);
+    cpu->df = 0;
+    }
+  }
+
+void doDealloc(CPU* cpu) {
+  word addr;
+  word heap;
+  heap = (cpu->ram[0x468] << 8) | cpu->ram[0x469];
+  }
+
 void cpuCycle(CPU *cpu) {
   byte i;
   word d;
@@ -555,8 +643,10 @@ void cpuCycle(CPU *cpu) {
       case 0x0327:                                                         // o_rmdir
            break;
       case 0x036c:                                                         // o_alloc
+           doAlloc(cpu);
            break;
       case 0x036f:                                                         // o_dealloc
+           doDealloc(cpu);
            break;
       }
 //    if (cpu->r[cpu->p] < 0x2000) {

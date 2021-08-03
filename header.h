@@ -7,6 +7,7 @@
 #include <termios.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 typedef u_int16_t word;
 typedef u_int8_t byte;
@@ -50,6 +51,7 @@ LINK byte runFlag;
 LINK byte use1805;
 LINK byte useElfos;
 LINK byte elfos4;
+LINK byte runDebugger;
 LINK byte showMap;
 LINK byte showTrace;
 LINK word ramStart;
@@ -58,6 +60,13 @@ LINK int  imap[256];
 LINK double freq;
 LINK struct termios original;
 
+extern void cpuCycle(CPU *cpu);
+extern void cpuDmaIn(CPU* cpu, byte v);
+extern byte cpuDmaOut(CPU* cpu);
+extern void cpuIntr(CPU* cpu, char typ);
+extern void cpuReset(CPU *cpu);
+
+extern void debugger(CPU* cpu);
 extern int loader(char* filename);
 extern void trace(char* message);
 

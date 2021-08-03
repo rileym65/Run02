@@ -21,6 +21,7 @@ int main(int argc, char** argv) {
   for (i=0; i<256; i++) imap[i] = 0;
   use1805 = 0;
   useElfos = 0;
+  runDebugger = 0;
   elfos4 = 0;
   exec = 0xffff;
   icount = 0;
@@ -34,6 +35,7 @@ int main(int argc, char** argv) {
   while (i < argc) {
     if (strcmp(argv[i],"-elfos") == 0) useElfos = 0xff;
     else if (strcmp(argv[i],"-e") == 0) useElfos = 0xff;
+    else if (strcmp(argv[i],"-d") == 0) runDebugger = 0xff;
     else if (strcmp(argv[i],"-1805") == 0) use1805 = 0xff;
     else if (strcmp(argv[i],"-4") == 0) { useElfos = 0xff; elfos4 = 0xff; }
     else if (strcmp(argv[i],"-t") == 0) showTrace = 0xff;
@@ -105,14 +107,17 @@ printf("freq=%f\n",freq);
 
   printf("\n");
 
-  tcgetattr(0,&terminal);
-  original = terminal;
-  terminal.c_lflag &= ~ICANON;
-  terminal.c_lflag &= ~ECHO;
-  if (tcsetattr(0,TCSANOW,&terminal) != 0) {
-    printf("Could not set terminal attributes\n");
-    exit(1);
+  if (runDebugger == 0) {
+    tcgetattr(0,&terminal);
+    original = terminal;
+    terminal.c_lflag &= ~ICANON;
+    terminal.c_lflag &= ~ECHO;
+    if (tcsetattr(0,TCSANOW,&terminal) != 0) {
+      printf("Could not set terminal attributes\n");
+      exit(1);
+      }
     }
+
   runFlag = 0xff;
   cpuReset(&cpu);
   if (useElfos && exec != 0xffff) {
@@ -129,17 +134,25 @@ printf("freq=%f\n",freq);
     cpu.r[0xa] = 0x80;
     }
   gettimeofday(&startTime, NULL);
-  while (runFlag) {
-    cpuCycle(&cpu);
-    if (cpu.idle) runFlag = 0;
+  if (runDebugger) {
+    debugger(&cpu);
+    }
+  else {
+      while (runFlag) {
+      cpuCycle(&cpu);
+      if (cpu.idle) runFlag = 0;
+      }
     }
   gettimeofday(&endTime, NULL);
-  if (tcsetattr(0,TCSANOW,&original) != 0) {
-    printf("Could not restore terminal attributes\n");
+  if (runDebugger == 0) {
+    if (tcsetattr(0,TCSANOW,&original) != 0) {
+      printf("Could not restore terminal attributes\n");
+      }
     }
 
   st = startTime.tv_sec * 1000000 + startTime.tv_usec;
   et = endTime.tv_sec * 1000000 + endTime.tv_usec;
+  printf("\n");
   printf("Instructions executed: %ld\n",icount);
   printf("Run time             : %f\n",(et-st)/1000000.0);
   printf("Instructions/second  : %f\n",icount/((et-st)/1000000.0));
