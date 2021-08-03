@@ -480,7 +480,35 @@ void doAlloc(CPU* cpu) {
 void doDealloc(CPU* cpu) {
   word addr;
   word heap;
+  word size;
+  word size2;
   heap = (cpu->ram[0x468] << 8) | cpu->ram[0x469];
+  cpu->ram[cpu->r[0xf]-3] = 1;
+  while (cpu->ram[heap] != 0) {
+    size = (cpu->ram[heap+1] << 8) | cpu->ram[heap+2];
+    if (cpu->ram[heap] == 1) {
+      addr = heap + size + 3;
+      if (cpu->ram[addr] == 1) {
+        size2 = (cpu->ram[addr+1] << 8) | cpu->ram[addr+2];
+        size += size2 + 3;
+        cpu->ram[heap+1] = (size & 0xff00) >> 8;
+        cpu->ram[heap+2] = (size & 0x00ff);
+        }
+      else heap += size + 3;
+      }
+    else heap += size + 3;
+    }
+  heap = (cpu->ram[0x468] << 8) | cpu->ram[0x469];
+  if (cpu->ram[heap] != 1) return;
+  while (cpu->ram[heap] == 1) {
+    size = (cpu->ram[heap+1] << 8) | cpu->ram[heap+2];
+    heap += size + 3;
+    }
+  cpu->ram[0x468] = (heap & 0xff00) >> 8;
+  cpu->ram[0x469] = (heap & 0x00ff);
+  heap--;
+  cpu->ram[0x442] = (heap & 0xff00) >> 8;
+  cpu->ram[0x443] = (heap & 0x00ff);
   }
 
 void cpuCycle(CPU *cpu) {
