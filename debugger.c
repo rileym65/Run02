@@ -5,6 +5,142 @@ word breakpoints[1024];
 int  numBreakpoints;
 byte traps[256];
 
+word disassem1805(CPU* cpu, word address) {
+  byte i;
+  byte n;
+  byte inst;
+  word adr;
+  inst = cpu->ram[address++];
+  i = inst & 0xf0;
+  n = inst & 0x0f;
+  switch (i) {
+    case 0x00:
+         switch (n) {
+           case 0x00:
+                printf("68 %02x       STPC\n",inst);
+                break;
+           case 0x01:
+                printf("68 %02x       DTC\n",inst);
+                break;
+           case 0x02:
+                printf("68 %02x       SPM2\n",inst);
+                break;
+           case 0x03:
+                printf("68 %02x       SCM2\n",inst);
+                break;
+           case 0x04:
+                printf("68 %02x       SPM1\n",inst);
+                break;
+           case 0x05:
+                printf("68 %02x       SCM1\n",inst);
+                break;
+           case 0x06:
+                printf("68 %02x       LDC\n",inst);
+                break;
+           case 0x07:
+                printf("68 %02x       STM\n",inst);
+                break;
+           case 0x08:
+                printf("68 %02x       GEC\n",inst);
+                break;
+           case 0x09:
+                printf("68 %02x       ETQ\n",inst);
+                break;
+           case 0x0a:
+                printf("68 %02x       XIE\n",inst);
+                break;
+           case 0x0b:
+                printf("68 %02x       XID\n",inst);
+                break;
+           case 0x0c:
+                printf("68 %02x       CIE\n",inst);
+                break;
+           case 0x0d:
+                printf("68 %02x       CID\n",inst);
+                break;
+           }
+         break;
+    case 0x20:
+         adr = cpu->ram[address++] << 8;
+         adr |= cpu->ram[address++];
+         printf("68 %02x %02x %02x DBNZ   R%X,%04X\n",inst,(adr & 0xff00)>>8,adr&0xff,n,adr);
+         break;
+    case 0x30:
+         switch (n) {
+           case 0x0e:
+                adr = cpu->ram[address++];
+                printf("68 %02x %02x    BCI    %02X\n",inst,adr&0xff,adr&0xff);
+                break;
+           case 0x0f:
+                adr = cpu->ram[address++];
+                printf("68 %02x %02x    BXI    %02X\n",inst,adr&0xff,adr&0xff);
+                break;
+           }
+    case 0x60:
+         printf("68 %02x       RLXA   R%X\n",inst,n);
+         break;
+    case 0x70:
+         switch (n) {
+           case 0x04:
+                printf("68 %02x       DADC\n",inst);
+                break;
+           case 0x06:
+                printf("68 %02x       DSAV\n",inst);
+                break;
+           case 0x07:
+                printf("68 %02x       DSMB\n",inst);
+                break;
+           case 0x0c:
+                adr = cpu->ram[address++];
+                printf("68 %02x %02x    DACI   %02X\n",inst,adr&0xff,adr&0xff);
+                break;
+           case 0x0f:
+                adr = cpu->ram[address++];
+                printf("68 %02x %02x    DSBI   %02X\n",inst,adr&0xff,adr&0xff);
+                break;
+           }
+         break;
+    case 0x80:
+         adr = cpu->ram[address++] << 8;
+         adr |= cpu->ram[address++];
+         printf("68 %02x %02x %02x SCAL   R%X,%04X\n",inst,(adr & 0xff00)>>8,adr&0xff,n,adr);
+         break;
+    case 0x90:
+         printf("68 %02x       SRET   R%X\n",inst,n);
+         break;
+    case 0xa0:
+         printf("68 %02x       RSXD   R%X\n",inst,n);
+         break;
+    case 0xb0:
+         printf("68 %02x       RNX    R%X\n",inst,n);
+         break;
+    case 0xc0:
+         adr = cpu->ram[address++] << 8;
+         adr |= cpu->ram[address++];
+         printf("68 %02x %02x %02x RLDI   R%X,%04X\n",inst,(adr & 0xff00)>>8,adr&0xff,n,adr);
+         break;
+    case 0xf0:
+         switch (n) {
+           case 0x04:
+                printf("68 %02x       DADD\n",inst);
+                break;
+           case 0x07:
+                printf("68 %02x       DSM\n",inst);
+                break;
+           case 0x0c:
+                adr = cpu->ram[address++];
+                printf("68 %02x %02x    DADI   %02X\n",inst,adr&0xff,adr&0xff);
+                break;
+           case 0x0f:
+                adr = cpu->ram[address++];
+                printf("68 %02x %02x    DSMI   %02X\n",inst,adr&0xff,adr&0xff);
+                break;
+           }
+         break;
+    }
+  return address;
+  }
+
 word disassem(CPU* cpu, word address) {
   byte i;
   byte n;
@@ -17,320 +153,320 @@ word disassem(CPU* cpu, word address) {
   switch (i) {
     case 0x00:
          if (n == 0)
-           printf("00       IDL\n");
+           printf("00          IDL\n");
          else
-           printf("%02x       LDN    %X\n",inst,n);
+           printf("%02x          LDN    %X\n",inst,n);
          break;
     case 0x10:
-         printf("%02x       INC    %X\n",inst,n);
+         printf("%02x          INC    %X\n",inst,n);
          break;
     case 0x20:
-         printf("%02x       DEC    %X\n",inst,n);
+         printf("%02x          DEC    %X\n",inst,n);
          break;
     case 0x30:
          adr = cpu->ram[address++];
          switch (n) {
            case 0x00:
-                printf("%02x %02x    BR     %02X\n",inst,adr,adr);
+                printf("%02x %02x       BR     %02X\n",inst,adr,adr);
                 break;
            case 0x01:
-                printf("%02x %02x    BQ     %02X\n",inst,adr,adr);
+                printf("%02x %02x       BQ     %02X\n",inst,adr,adr);
                 break;
            case 0x02:
-                printf("%02x %02x    BZ     %02X\n",inst,adr,adr);
+                printf("%02x %02x       BZ     %02X\n",inst,adr,adr);
                 break;
            case 0x03:
-                printf("%02x %02x    BDF    %02X\n",inst,adr,adr);
+                printf("%02x %02x       BDF    %02X\n",inst,adr,adr);
                 break;
            case 0x04:
-                printf("%02x %02x    B1     %02X\n",inst,adr,adr);
+                printf("%02x %02x       B1     %02X\n",inst,adr,adr);
                 break;
            case 0x05:
-                printf("%02x %02x    B2     %02X\n",inst,adr,adr);
+                printf("%02x %02x       B2     %02X\n",inst,adr,adr);
                 break;
            case 0x06:
-                printf("%02x %02x    B3     %02X\n",inst,adr,adr);
+                printf("%02x %02x       B3     %02X\n",inst,adr,adr);
                 break;
            case 0x07:
-                printf("%02x %02x    B4     %02X\n",inst,adr,adr);
+                printf("%02x %02x       B4     %02X\n",inst,adr,adr);
                 break;
            case 0x08:
-                printf("%02x       SKP\n",inst);
+                printf("%02x          SKP\n",inst);
                 address--;
                 break;
            case 0x09:
-                printf("%02x %02x    BNQ    %02X\n",inst,adr,adr);
+                printf("%02x %02x       BNQ    %02X\n",inst,adr,adr);
                 break;
            case 0x0a:
-                printf("%02x %02x    BNZ    %02X\n",inst,adr,adr);
+                printf("%02x %02x       BNZ    %02X\n",inst,adr,adr);
                 break;
            case 0x0b:
-                printf("%02x %02x    BNF    %02X\n",inst,adr,adr);
+                printf("%02x %02x       BNF    %02X\n",inst,adr,adr);
                 break;
            case 0x0c:
-                printf("%02x %02x    BN1    %02X\n",inst,adr,adr);
+                printf("%02x %02x       BN1    %02X\n",inst,adr,adr);
                 break;
            case 0x0d:
-                printf("%02x %02x    BN2    %02X\n",inst,adr,adr);
+                printf("%02x %02x       BN2    %02X\n",inst,adr,adr);
                 break;
            case 0x0e:
-                printf("%02x %02x    BN3    %02X\n",inst,adr,adr);
+                printf("%02x %02x       BN3    %02X\n",inst,adr,adr);
                 break;
            case 0x0f:
-                printf("%02x %02x    BN4    %02X\n",inst,adr,adr);
+                printf("%02x %02x       BN4    %02X\n",inst,adr,adr);
                 break;
            }
          break;
     case 0x40:
-         printf("%02x       LDA    %X\n",inst,n);
+         printf("%02x          LDA    %X\n",inst,n);
          break;
     case 0x50:
-         printf("%02x       STR    %X\n",inst,n);
+         printf("%02x          STR    %X\n",inst,n);
          break;
     case 0x60:
          switch (n) {
            case 0x00:
-                printf("%02x       IRX\n",inst);
+                printf("%02x          IRX\n",inst);
                 break;
            case 0x01:
-                printf("%02x       OUT    1\n",inst);
+                printf("%02x          OUT    1\n",inst);
                 break;
            case 0x02:
-                printf("%02x       OUT    2\n",inst);
+                printf("%02x          OUT    2\n",inst);
                 break;
            case 0x03:
-                printf("%02x       OUT    3\n",inst);
+                printf("%02x          OUT    3\n",inst);
                 break;
            case 0x04:
-                printf("%02x       OUT    4\n",inst);
+                printf("%02x          OUT    4\n",inst);
                 break;
            case 0x05:
-                printf("%02x       OUT    5\n",inst);
+                printf("%02x          OUT    5\n",inst);
                 break;
            case 0x06:
-                printf("%02x       OUT    6\n",inst);
+                printf("%02x          OUT    6\n",inst);
                 break;
            case 0x07:
-                printf("%02x       OUT    7\n",inst);
+                printf("%02x          OUT    7\n",inst);
                 break;
            case 0x08:
-                printf("%02x       NBR\n",inst);
+                address = disassem1805(cpu, address);
                 break;
            case 0x09:
-                printf("%02x       INP    1\n",inst);
+                printf("%02x          INP    1\n",inst);
                 break;
            case 0x0a:
-                printf("%02x       INP    2\n",inst);
+                printf("%02x          INP    2\n",inst);
                 break;
            case 0x0b:
-                printf("%02x       INP    3\n",inst);
+                printf("%02x          INP    3\n",inst);
                 break;
            case 0x0c:
-                printf("%02x       INP    4\n",inst);
+                printf("%02x          INP    4\n",inst);
                 break;
            case 0x0d:
-                printf("%02x       INP    5\n",inst);
+                printf("%02x          INP    5\n",inst);
                 break;
            case 0x0e:
-                printf("%02x       INP    6\n",inst);
+                printf("%02x          INP    6\n",inst);
                 break;
            case 0x0f:
-                printf("%02x       INP    7\n",inst);
+                printf("%02x          INP    7\n",inst);
                 break;
            }
          break;
     case 0x70:
          switch (n) {
            case 0x00:
-                printf("%02x       RET\n",inst);
+                printf("%02x          RET\n",inst);
                 break;
            case 0x01:
-                printf("%02x       DIS\n",inst);
+                printf("%02x          DIS\n",inst);
                 break;
            case 0x02:
-                printf("%02x       LDXA\n",inst);
+                printf("%02x          LDXA\n",inst);
                 break;
            case 0x03:
-                printf("%02x       STXD\n",inst);
+                printf("%02x          STXD\n",inst);
                 break;
            case 0x04:
-                printf("%02x       ADC\n",inst);
+                printf("%02x          ADC\n",inst);
                 break;
            case 0x05:
-                printf("%02x       SDB\n",inst);
+                printf("%02x          SDB\n",inst);
                 break;
            case 0x06:
-                printf("%02x       SHRC\n",inst);
+                printf("%02x          SHRC\n",inst);
                 break;
            case 0x07:
-                printf("%02x       SMB\n",inst);
+                printf("%02x          SMB\n",inst);
                 break;
            case 0x08:
-                printf("%02x       SAV\n",inst);
+                printf("%02x          SAV\n",inst);
                 break;
            case 0x09:
-                printf("%02x       MARK\n",inst);
+                printf("%02x          MARK\n",inst);
                 break;
            case 0x0a:
-                printf("%02x       REQ\n",inst);
+                printf("%02x          REQ\n",inst);
                 break;
            case 0x0b:
-                printf("%02x       SEQ\n",inst);
+                printf("%02x          SEQ\n",inst);
                 break;
            case 0x0c:
                 adr = cpu->ram[address++];
-                printf("%02x %02x      ADCI   %02X\n",inst,adr,adr);
+                printf("%02x %02x         ADCI   %02X\n",inst,adr,adr);
                 break;
            case 0x0d:
                 adr = cpu->ram[address++];
-                printf("%02x %02x      SDBI   %02X\n",inst,adr,adr);
+                printf("%02x %02x         SDBI   %02X\n",inst,adr,adr);
                 break;
            case 0x0e:
-                printf("%02x       SHLC\n",inst);
+                printf("%02x          SHLC\n",inst);
                 break;
            case 0x0f:
                 adr = cpu->ram[address++];
-                printf("%02x %02x      SMBI   %02X\n",inst,adr,adr);
+                printf("%02x %02x         SMBI   %02X\n",inst,adr,adr);
                 break;
            }
          break;
     case 0x80:
-         printf("%02x       GLO    %X\n",inst,n);
+         printf("%02x          GLO    %X\n",inst,n);
          break;
     case 0x90:
-         printf("%02x       GHI    %X\n",inst,n);
+         printf("%02x          GHI    %X\n",inst,n);
          break;
     case 0xa0:
-         printf("%02x       PLO    %X\n",inst,n);
+         printf("%02x          PLO    %X\n",inst,n);
          break;
     case 0xb0:
-         printf("%02x       PHI    %X\n",inst,n);
+         printf("%02x          PHI    %X\n",inst,n);
          break;
     case 0xc0:
          adr = cpu->ram[address++] << 8;
          adr |= cpu->ram[address++];
          switch (n) {
            case 0x00:
-                printf("%02x %02x %02x LBR    %04X\n",inst,(adr & 0xff00)>>8,adr&0xff,adr);
+                printf("%02x %02x %02x    LBR    %04X\n",inst,(adr & 0xff00)>>8,adr&0xff,adr);
                 break;
            case 0x01:
-                printf("%02x %02x %02x LBQ    %04X\n",inst,(adr & 0xff00)>>8,adr&0xff,adr);
+                printf("%02x %02x %02x    LBQ    %04X\n",inst,(adr & 0xff00)>>8,adr&0xff,adr);
                 break;
            case 0x02:
-                printf("%02x %02x %02x LBZ    %04X\n",inst,(adr & 0xff00)>>8,adr&0xff,adr);
+                printf("%02x %02x %02x    LBZ    %04X\n",inst,(adr & 0xff00)>>8,adr&0xff,adr);
                 break;
            case 0x03:
-                printf("%02x %02x %02x LBDF   %04X\n",inst,(adr & 0xff00)>>8,adr&0xff,adr);
+                printf("%02x %02x %02x    LBDF   %04X\n",inst,(adr & 0xff00)>>8,adr&0xff,adr);
                 break;
            case 0x04:
-                printf("%02x         NOP\n",inst);
+                printf("%02x            NOP\n",inst);
                 address -= 2;
                 break;
            case 0x05:
-                printf("%02x         LSNQ\n",inst);
+                printf("%02x            LSNQ\n",inst);
                 address -= 2;
                 break;
            case 0x06:
-                printf("%02x         LSNZ\n",inst);
+                printf("%02x            LSNZ\n",inst);
                 address -= 2;
                 break;
            case 0x07:
-                printf("%02x         LSNF\n",inst);
+                printf("%02x            LSNF\n",inst);
                 address -= 2;
                 break;
            case 0x08:
-                printf("%02x         LSKP\n",inst);
+                printf("%02x            LSKP\n",inst);
                 address -= 2;
                 break;
            case 0x09:
-                printf("%02x %02x %02x LBNQ   %04X\n",inst,(adr & 0xff00)>>8,adr&0xff,adr);
+                printf("%02x %02x %02x    LBNQ   %04X\n",inst,(adr & 0xff00)>>8,adr&0xff,adr);
                 break;
            case 0x0a:
-                printf("%02x %02x %02x LBNZ   %04X\n",inst,(adr & 0xff00)>>8,adr&0xff,adr);
+                printf("%02x %02x %02x    LBNZ   %04X\n",inst,(adr & 0xff00)>>8,adr&0xff,adr);
                 break;
            case 0x0b:
-                printf("%02x %02x %02x LBNF   %04X\n",inst,(adr & 0xff00)>>8,adr&0xff,adr);
+                printf("%02x %02x %02x    LBNF   %04X\n",inst,(adr & 0xff00)>>8,adr&0xff,adr);
                 break;
            case 0x0c:
-                printf("%02x         LSIE\n",inst);
+                printf("%02x            LSIE\n",inst);
                 address -= 2;
                 break;
            case 0x0d:
-                printf("%02x         LSQ\n",inst);
+                printf("%02x            LSQ\n",inst);
                 address -= 2;
                 break;
            case 0x0e:
-                printf("%02x         LSZ\n",inst);
+                printf("%02x            LSZ\n",inst);
                 address -= 2;
                 break;
            case 0x0f:
-                printf("%02x         LSDF\n",inst);
+                printf("%02x            LSDF\n",inst);
                 address -= 2;
                 break;
            }
          break;
     case 0xd0:
-         printf("%02x       SEP    %X\n",inst,n);
+         printf("%02x          SEP    %X\n",inst,n);
          break;
     case 0xe0:
-         printf("%02x       SEX    %X\n",inst,n);
+         printf("%02x          SEX    %X\n",inst,n);
          break;
     case 0xf0:
          switch (n) {
            case 0x00:
-                printf("%02x       LDX\n",inst);
+                printf("%02x          LDX\n",inst);
                 break;
            case 0x01:
-                printf("%02x       OR\n",inst);
+                printf("%02x          OR\n",inst);
                 break;
            case 0x02:
-                printf("%02x       AND\n",inst);
+                printf("%02x          AND\n",inst);
                 break;
            case 0x03:
-                printf("%02x       XOR\n",inst);
+                printf("%02x          XOR\n",inst);
                 break;
            case 0x04:
-                printf("%02x       ADD\n",inst);
+                printf("%02x          ADD\n",inst);
                 break;
            case 0x05:
-                printf("%02x       SD\n",inst);
+                printf("%02x          SD\n",inst);
                 break;
            case 0x06:
-                printf("%02x       SHR\n",inst);
+                printf("%02x          SHR\n",inst);
                 break;
            case 0x07:
-                printf("%02x       SM\n",inst);
+                printf("%02x          SM\n",inst);
                 break;
            case 0x08:
                 adr = cpu->ram[address++];
-                printf("%02x %02x    LDI    %02X\n",inst,adr,adr);
+                printf("%02x %02x       LDI    %02X\n",inst,adr,adr);
                 break;
            case 0x09:
                 adr = cpu->ram[address++];
-                printf("%02x %02x    ORI    %02X\n",inst,adr,adr);
+                printf("%02x %02x       ORI    %02X\n",inst,adr,adr);
                 break;
            case 0x0a:
                 adr = cpu->ram[address++];
-                printf("%02x %02x    ANI    %02X\n",inst,adr,adr);
+                printf("%02x %02x       ANI    %02X\n",inst,adr,adr);
                 break;
            case 0x0b:
                 adr = cpu->ram[address++];
-                printf("%02x %02x    XRI    %02X\n",inst,adr,adr);
+                printf("%02x %02x       XRI    %02X\n",inst,adr,adr);
                 break;
            case 0x0c:
                 adr = cpu->ram[address++];
-                printf("%02x %02x    ADI    %02X\n",inst,adr,adr);
+                printf("%02x %02x       ADI    %02X\n",inst,adr,adr);
                 break;
            case 0x0d:
                 adr = cpu->ram[address++];
-                printf("%02x %02x    SDI    %02X\n",inst,adr,adr);
+                printf("%02x %02x       SDI    %02X\n",inst,adr,adr);
                 break;
            case 0x0e:
-                printf("%02x       SHL\n",inst);
+                printf("%02x          SHL\n",inst);
                 break;
            case 0x0f:
                 adr = cpu->ram[address++];
-                printf("%02x %02x    SMI    %02X\n",inst,adr,adr);
+                printf("%02x %02x       SMI    %02X\n",inst,adr,adr);
                 break;
            }
          break;
