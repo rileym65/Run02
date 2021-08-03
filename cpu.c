@@ -521,6 +521,7 @@ void cpuCycle(CPU *cpu) {
   int  cycles;
   char buffer[32];
   char buffer2[2];
+  char name2[32];
   struct timeval tv;
   long long st;
   long long et;
@@ -657,18 +658,68 @@ void cpuCycle(CPU *cpu) {
            return;
            break;
       case 0x031b:                                                         // o_rename
+           i = 0;
+           while (cpu->ram[cpu->r[0xf]] != 0)
+             buffer[i++] = cpu->ram[cpu->r[0xf]++];
+           buffer[i] = 0;
+           i = 0;
+           while (cpu->ram[cpu->r[0xc]] != 0)
+             name2[i++] = cpu->ram[cpu->r[0xf]++];
+           name2[i] = 0;
+           i = rename(buffer,name2);
+           cpu->df = (i == 0) ? 0 : 1;
+           sret(cpu);
+           return;
            break;
       case 0x0318:                                                         // o_delete
+           i = 0;
+           while (cpu->ram[cpu->r[0xf]] != 0)
+             buffer[i++] = cpu->ram[cpu->r[0xf]++];
+           buffer[i] = 0;
+           i = unlink(buffer);
+           cpu->df = (i == 0) ? 0 : 1;
+           sret(cpu);
+           return;
            break;
       case 0x031e:                                                         // o_exec
+           cpu->df = 1;
+           sret(cpu);
+           return;
            break;
       case 0x0315:                                                         // o_opendir
+           cpu->df = 1;
+           sret(cpu);
+           return;
            break;
       case 0x0321:                                                         // o_mkdir
+           i = 0;
+           while (cpu->ram[cpu->r[0xf]] != 0)
+             buffer[i++] = cpu->ram[cpu->r[0xf]++];
+           buffer[i] = 0;
+           i = mkdir(buffer,0755);
+           cpu->df = (i == 0) ? 0 : 1;
+           sret(cpu);
+           return;
            break;
       case 0x0324:                                                         // o_chdir
+           i = 0;
+           while (cpu->ram[cpu->r[0xf]] != 0)
+             buffer[i++] = cpu->ram[cpu->r[0xf]++];
+           buffer[i] = 0;
+           i = chdir(buffer);
+           cpu->df = (i == 0) ? 0 : 1;
+           sret(cpu);
+           return;
            break;
       case 0x0327:                                                         // o_rmdir
+           i = 0;
+           while (cpu->ram[cpu->r[0xf]] != 0)
+             buffer[i++] = cpu->ram[cpu->r[0xf]++];
+           buffer[i] = 0;
+           i = rmdir(buffer);
+           cpu->df = (i == 0) ? 0 : 1;
+           sret(cpu);
+           return;
            break;
       case 0x036c:                                                         // o_alloc
            doAlloc(cpu);
