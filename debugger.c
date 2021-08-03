@@ -558,6 +558,10 @@ void dbgCmdQ(CPU* cpu, char* buffer) {
 void dbgCmdR(CPU* cpu, char* buffer) {
   word a;
   byte r;
+  if (*buffer == 0) {
+    cpuReset(cpu);
+    return;
+    }
   buffer= hexToBin(buffer, &a);
   r = a & 0xf;
   if (*buffer == '=') {
@@ -661,6 +665,7 @@ void help() {
   printf("P=n            - set P to n\n");
   printf("Q              - show value of Q\n");
   printf("Q=n            - set Q to n\n");
+  printf("R              - perform CPU reset\n");
   printf("Rn             - show value of Rn\n");
   printf("Rn=xxxx        - set Rn to xxxx\n");
   printf("T              - show value of T\n");
