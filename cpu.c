@@ -68,7 +68,7 @@ byte bcdAdd(CPU* cpu,byte a, byte b, byte c) {
 
 void bcdSub(CPU* cpu,byte a, byte b, byte c) {
   b = 0x99 - b;
-  if (b & 0x0f != 9) b++;
+  if ((b & 0x0f) != 9) b++;
   else b = (b & 0xf0) + 0x10;
   c = (c == 0) ? 1 : 0;
   bcdAdd(cpu, a, b, c);
@@ -378,7 +378,7 @@ void cpu1805(CPU *cpu) {
                   }
                 break;
            case 0x07:                                                      // DSM
-                bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->x]], 0);
+                bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->x]], 1);
                 if (showTrace) {
                   sprintf(tbuffer,"DSM                    D=%02x\n",cpu->d);
                   trace(tbuffer);
@@ -392,7 +392,7 @@ void cpu1805(CPU *cpu) {
                   }
                 break;
            case 0x0f:                                                      // DSMI
-                bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->p]++], 0);
+                bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->p]++], 1);
                 if (showTrace) {
                   sprintf(tbuffer,"DSMI                   D=%02x\n",cpu->d);
                   trace(tbuffer);
@@ -1747,11 +1747,12 @@ void cpuCycle(CPU *cpu) {
     }
   if (use1805 && cpu->crunning && cpu->cmode == T_TIMER) {
     while (cycles > 0) {
+      cycles--;
       if (cpu->cpre == 0) cpu->cpre = 31;
       else {
         cpu->cpre--;
         if (cpu->cpre == 0) {
-          if (cpu->cntr == 0) cpu->cntr = 255;
+          if (cpu->cntr == 0) cpu->cntr = cpu->ch;
           else {
             cpu->cntr--;
             if (cpu->cntr == 0) {
