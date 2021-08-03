@@ -56,9 +56,8 @@ void sret(CPU *cpu) {
   }
 
 byte bcdAdd(CPU* cpu,byte a, byte b, byte c) {
-  cpu->d = a+b;
+  cpu->d = a+b+c;
   cpu->df = 0;
-  if (c != 0) cpu->d++;
   if ((cpu->d & 0x0f) >= 0x0a || ((cpu->d & 0x0f) < (a & 0x0f))) cpu->d += 0x06;
   if ((cpu->d & 0xf0) >= 0xa0 || ((cpu->d & 0xf0) < (a & 0xf0))) { cpu->d += 0x60; cpu->df = 1; }
   if ((cpu->d & 0xf0) < (a & 0xf0)) cpu->df = 1;
@@ -271,7 +270,7 @@ void cpu1805(CPU *cpu) {
            }
          break;
     case 0x07:
-         switch (cpu->i) {
+         switch (cpu->n) {
            case 0x04:                                                      // DADC
                 bcdAdd(cpu, cpu->d, cpu->ram[cpu->r[cpu->x]], cpu->df);
                 if (showTrace) {
