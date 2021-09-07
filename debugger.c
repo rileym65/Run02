@@ -506,6 +506,17 @@ void dbgShowCpu(CPU* cpu) {
 void dbgShow(CPU* cpu, char* buffer) {
   int x,y;
   word a;
+  if (*buffer == 'm' || *buffer == 'M') {
+    printf("       01234567 89ABCDEF\n");
+    printf("       -------- --------");
+    for (x=0; x<256; x++) {
+      if (x % 16 == 0) printf("\n%04x: ",x << 8);
+      if (x % 8 == 0) printf(" ");
+      printf("%c",mmap[x]);
+      }
+    printf("\n");
+    return;
+    }
   if (*buffer == '?') {
     dbgShowCpu(cpu);
     return;
@@ -772,6 +783,7 @@ void help() {
   printf("?Rn            - dump memory from R[n]\n");
   printf("?addr          - dump memory from specified address\n");
   printf("??             - show CPU registers\n");
+  printf("?M             - show memory map\n");
   printf("$              - disassemble memory\n");
   printf("$P             - disassemble memory from R[P]\n");
   printf("$X             - disassemble memory from R[X]\n");

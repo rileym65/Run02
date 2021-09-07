@@ -2,6 +2,47 @@
 
 #include "header.h"
 
+void processMem(char* line, char typ) {
+  word i;
+  word start;
+  word end;
+  byte which;
+  char* orig;
+  word n;
+  orig = line;
+  start = 0;
+  end = 0;
+  which = 0;
+  while ((*line >= '0' && *line <= '9') ||
+         (*line >= 'a' && *line <= 'f') ||
+         (*line >= 'A' && *line <= 'F')) {
+    n = 0xff;
+    if (*line >= '0' && *line <= '9') n = *line - '0';
+    if (*line >= 'a' && *line <= 'f') n = *line - 87;
+    if (*line >= 'A' && *line <= 'F') n = *line - 55;
+    if (n != 0xff) {
+      if (which == 0) start = (start << 4) | n;
+        else end = (end << 4) | n;
+      }
+    else {
+      printf("Invalid memory specifiation.  Aborting: %s\n",orig);
+      exit(1);
+      }
+    line++;
+    if (*line == '-') {
+      which = 1;
+      line++;
+      }
+    }
+  if (which == 0) {
+    printf("Invalid memory specifiation.  Aborting: %s\n",orig);
+    exit(1);
+    }
+  start >>= 8;
+  end >>= 8;
+  for (i=start; i<=end; i++) mmap[i] = typ;
+  }
+
 int main(int argc, char** argv) {
   int i;
   int f;
@@ -21,6 +62,7 @@ int main(int argc, char** argv) {
   for (i=0; i<256; i++) imap[i] = 0;
   use1805 = 0;
   useElfos = 0;
+  useBios = 0xff;
   runDebugger = 0;
   elfos4 = 0;
   exec = 0xffff;
@@ -31,6 +73,10 @@ int main(int argc, char** argv) {
   args = -1;
   ramStart = 0x0000;
   ramEnd = 0xefff;
+  for (i=0; i<256; i++) mmap[i] = 'A';
+  if (useBios) {
+    for (i=0xf8; i<=0xff; i++) mmap[i] = 'O';
+    }
   i = 1;
   while (i < argc) {
     if (strcmp(argv[i],"-elfos") == 0) useElfos = 0xff;
@@ -39,11 +85,14 @@ int main(int argc, char** argv) {
     else if (strcmp(argv[i],"-1805") == 0) use1805 = 0xff;
     else if (strcmp(argv[i],"-4") == 0) { useElfos = 0xff; elfos4 = 0xff; }
     else if (strcmp(argv[i],"-t") == 0) showTrace = 0xff;
+    else if (strcmp(argv[i],"-nb") == 0) useBios = 0;
+    else if (strncmp(argv[i],"-ram=",5) == 0) processMem(argv[i]+5,'A');
+    else if (strncmp(argv[i],"-rom=",5) == 0) processMem(argv[i]+5,'O');
+    else if (strncmp(argv[i],"-none=",6) == 0) processMem(argv[i]+6,'X');
     else if (strcmp(argv[i],"-c") == 0) {
       i++;
       freq = atof(argv[i]);
       freq = 1/(freq/8);
-printf("freq=%f\n",freq);
       }
     else if (strcmp(argv[i],"-a") == 0) {
       i++;
@@ -67,7 +116,7 @@ printf("freq=%f\n",freq);
     else loader(argv[i]);
     i++;
     }
-  
+
   if (useElfos) {
     cpu.ram[0x442] = (ramEnd & 0xff00) >> 8;
     cpu.ram[0x443] = (ramEnd & 0x00ff);

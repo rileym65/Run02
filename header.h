@@ -49,6 +49,7 @@ LINK int  cycles;
 LINK long long icount;
 LINK byte runFlag;
 LINK byte use1805;
+LINK byte useBios;
 LINK byte useElfos;
 LINK byte elfos4;
 LINK byte runDebugger;
@@ -57,6 +58,7 @@ LINK byte showTrace;
 LINK word ramStart;
 LINK word ramEnd;
 LINK int  imap[256];
+LINK char mmap[256];
 LINK double freq;
 LINK struct termios original;
 
