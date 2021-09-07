@@ -1,0 +1,63 @@
+Command line switches:
+  -1805           - Enable 1804/5/6a instructions
+  -4              - Enable Elf/OS 4.1.0 calls, sets -e
+  -elfos          - Enable Elf/OS kernel calls
+  -e              - Enable Elf/OS kernel calls
+  -d              - Run in debugger
+  -t              - Turn on command tracing
+  -a args         - Set arguments for Elf/OS executable
+  -b file         - Load binary file
+  -nb             - Do not use simulated BIOS
+  -ram=nnnn-mmmm  - Mark region from nnnn to mmmm as RAM
+  -rom=nnnn-mmmm  - Mark region from nnnn to mmmm as ROM
+  -none=nnnn-mmmm - Mark region from nnnn to mmmm as None
+
+Debugger commands:
+  ?              - dump memory
+  ?P             - dump memory from R[P]
+  ?X             - dump memory from R[X]
+  ?Rn            - dump memory from R[n]
+  ?addr          - dump memory from specified address
+  ??             - show CPU registers
+  ?M             - show memory map
+  $              - disassemble memory
+  $P             - disassemble memory from R[P]
+  $X             - disassemble memory from R[X]
+  $Rn            - disassemble memory from R[n]
+  $addr          - disassemble memory from specified address
+  !addr bb bb .. - store bytes at address
+  !P bb bb  ..   - store bytes at M[R[P]]
+  !X bb bb  ..   - store bytes at M[R[X]]
+  !Rn bb bb  ..  - store bytes at M[R[n]]
+  + bb bb ..     - push values to stack (STXD)
+  -n             - pop n items from stack (IRX * n)
+  @              - run at R[P]
+  @addr          - set R[P] to addr then run
+  B?             - show break points
+  B+addr         - add break point
+  B-addr         - remove break point
+  D              - show value in D
+  D=b            - Set D to b
+  DF             - show value in DF
+  DF=b           - set value in DF
+  DI bb          - perform DMA In using bb as input
+  DO             - perform DMA Out
+  I              - trigger interrupt action
+  IE             - show state of IE
+  IE=b           - set IE
+  P              - show value of P
+  P=n            - set P to n
+  Q              - show value of Q
+  Q=n            - set Q to n
+  R              - perform CPU reset
+  Rn             - show value of Rn
+  Rn=xxxx        - set Rn to xxxx
+  T              - show value of T
+  T=n            - set T to n
+  T?             - show instruction traps
+  T+bb           - add instruction trap
+  T-bb           - remove instruction trap
+  X              - show value of X
+  X=n            - set X to n
+  /              - exit
+
