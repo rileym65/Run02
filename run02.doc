@@ -8,6 +8,7 @@ Command line switches:
   -a args         - Set arguments for Elf/OS executable
   -b file         - Load binary file
   -nb             - Do not use simulated BIOS
+  -u              - Turn on live update in visual debugger
   -v              - Run debugger in visual mode
   -ram=nnnn-mmmm  - Mark region from nnnn to mmmm as RAM
   -rom=nnnn-mmmm  - Mark region from nnnn to mmmm as ROM
@@ -58,6 +59,10 @@ Debugger commands:
   T?             - show instruction traps
   T+bb           - add instruction trap
   T-bb           - remove instruction trap
+  TR+            - turn on command tracing
+  TR-            - turn off command tracing
+  U+             - turn on live update
+  U-             - turn off live update
   X              - show value of X
   X=n            - set X to n
   /              - exit

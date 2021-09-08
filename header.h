@@ -64,6 +64,7 @@ LINK int  imap[256];
 LINK char mmap[256];
 LINK double freq;
 LINK struct termios original;
+LINK byte liveUpdate;
 
 extern void cpuCycle(CPU *cpu);
 extern void cpuDmaIn(CPU* cpu, byte v);

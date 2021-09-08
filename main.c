@@ -64,6 +64,7 @@ int main(int argc, char** argv) {
   useElfos = 0;
   useBios = 0xff;
   useVisual = 0;
+  liveUpdate = 0;
   runDebugger = 0;
   elfos4 = 0;
   exec = 0xffff;
@@ -86,6 +87,7 @@ int main(int argc, char** argv) {
     else if (strcmp(argv[i],"-1805") == 0) use1805 = 0xff;
     else if (strcmp(argv[i],"-4") == 0) { useElfos = 0xff; elfos4 = 0xff; }
     else if (strcmp(argv[i],"-t") == 0) showTrace = 0xff;
+    else if (strcmp(argv[i],"-u") == 0) liveUpdate = 0xff;
     else if (strcmp(argv[i],"-v") == 0) { useVisual = 0xff; runDebugger = 0xff; }
     else if (strcmp(argv[i],"-nb") == 0) useBios = 0;
     else if (strncmp(argv[i],"-ram=",5) == 0) processMem(argv[i]+5,'A');

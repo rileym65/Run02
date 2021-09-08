@@ -18,6 +18,50 @@ void output(char* line) {
     }
   }
 
+void showScreen(CPU* cpu) {
+  int i;
+  printf("\e[1;1H");
+  printf("+---------+\n");
+  for (i=0; i<16; i++)
+    printf("| R%X %04X |\n",i,cpu->r[i]);
+  printf("+---------+\n");
+  printf("\e[1;12H");
+  printf(" +------+ +------+ +-----+ +-----+ +------+ +-----+ +------+\n");
+  printf("\e[2;13H");
+  printf("| D %02X | | DF %X | | X %X | | P %X | | T %02X | | Q %X | | IE %X |\n",
+    cpu->d, cpu->df, cpu->x, cpu->p, cpu->t, cpu->q, cpu->ie);
+  printf("\e[3;12H");
+  printf(" +------+ +------+ +-----+ +-----+ +------+ +-----+ +------+\n");
+  printf("\e[4;13H");
+  printf("+------------------------------------------------------------------+\n");
+  for (i=0; i<16; i++) {
+    printf("\e[%d;13H",i+5);
+    printf("|                                                                  |\n");
+    }
+  printf("\e[21;13H");
+  printf("+------------------------------------------------------------------+\n");
+  printf("\e[22;1H");
+  }
+
+void updateScreen(CPU* cpu) {
+  int i;
+  printf("\e[1;1H");
+  printf("+---------+\n");
+  for (i=0; i<16; i++)
+    printf("| R%X %04X |\n",i,cpu->r[i]);
+  printf("+---------+\n");
+  printf("\e[1;12H");
+  printf(" +------+ +------+ +-----+ +-----+ +------+ +-----+ +------+\n");
+  printf("\e[2;13H");
+  printf("| D %02X | | DF %X | | X %X | | P %X | | T %02X | | Q %X | | IE %X |\n",
+    cpu->d, cpu->df, cpu->x, cpu->p, cpu->t, cpu->q, cpu->ie);
+  printf("\e[3;12H");
+  printf(" +------+ +------+ +-----+ +-----+ +------+ +-----+ +------+\n");
+  printf("\e[23;1H");
+  printf("%79s"," ");
+  printf("\e[22;1H");
+  }
+
 word disassem1805(CPU* cpu, word address) {
   byte i;
   byte n;
@@ -843,6 +887,12 @@ void dbgCmdT(CPU* cpu, char* buffer) {
   word a;
   char line[80];
   char tmp[16];
+  if (*buffer == 'r' || *buffer == 'R') {
+    buffer++;
+    if (*buffer == '+') showTrace = 0xff;
+    if (*buffer == '-') showTrace = 0x00;
+    return;
+    }
   if (*buffer == '?') {
     if (useVisual) {
       output("");
@@ -888,6 +938,11 @@ void dbgCmdT(CPU* cpu, char* buffer) {
     }
   }
 
+void dbgCmdU(CPU* cpu, char* buffer) {
+  if (*buffer == '+') liveUpdate = 0xff;
+  if (*buffer == '-') liveUpdate = 0x00;
+  }
+
 void dbgCmdX(CPU* cpu, char* buffer) {
   word a;
   char line[80];
@@ -915,6 +970,9 @@ void dbgRun(CPU* cpu, char* buffer) {
   cpu->idle = 0;
   runFlag = 0xff;
   while (runFlag) {
+    if (liveUpdate && useVisual) {
+      updateScreen(cpu);
+      }
     cpuCycle(cpu);
     if (cpu->idle) runFlag = 0;
     for (i=0; i<numBreakpoints; i++)
@@ -974,6 +1032,12 @@ void help() {
     output("T?             - show instruction traps");
     output("T+bb           - add instruction trap");
     output("T-bb           - remove instruction trap");
+    output("TR+            - turn on tracing");
+    output("TR-            - turn off tracing");
+    output("U+             - turn on live update");
+    output("U-             - turn off live update");
+    printf("\e[23;1H--MORE--");
+    fgets(buffer,255,stdin);
     output("X              - show value of X");
     output("X=n            - set X to n");
     output("/              - exit");
@@ -1023,54 +1087,14 @@ void help() {
     printf("T?             - show instruction traps\n");
     printf("T+bb           - add instruction trap\n");
     printf("T-bb           - remove instruction trap\n");
+    printf("TR+            - turn on tracing\n");
+    printf("TR-            - turn off tracing\n");
+    printf("U+             - turn on live update\n");
+    printf("U-             - turn off live update\n");
     printf("X              - show value of X\n");
     printf("X=n            - set X to n\n");
     printf("/              - exit\n");
     }
-  }
-
-void showScreen(CPU* cpu) {
-  int i;
-  printf("\e[1;1H");
-  printf("+---------+\n");
-  for (i=0; i<16; i++)
-    printf("| R%X %04X |\n",i,cpu->r[i]);
-  printf("+---------+\n");
-  printf("\e[1;12H");
-  printf(" +------+ +------+ +-----+ +-----+ +------+ +-----+ +------+\n");
-  printf("\e[2;13H");
-  printf("| D %02X | | DF %X | | X %X | | P %X | | T %02X | | Q %X | | IE %X |\n",
-    cpu->d, cpu->df, cpu->x, cpu->p, cpu->t, cpu->q, cpu->ie);
-  printf("\e[3;12H");
-  printf(" +------+ +------+ +-----+ +-----+ +------+ +-----+ +------+\n");
-  printf("\e[4;13H");
-  printf("+------------------------------------------------------------------+\n");
-  for (i=0; i<16; i++) {
-    printf("\e[%d;13H",i+5);
-    printf("|                                                                  |\n");
-    }
-  printf("\e[21;13H");
-  printf("+------------------------------------------------------------------+\n");
-  printf("\e[22;1H");
-  }
-
-void updateScreen(CPU* cpu) {
-  int i;
-  printf("\e[1;1H");
-  printf("+---------+\n");
-  for (i=0; i<16; i++)
-    printf("| R%X %04X |\n",i,cpu->r[i]);
-  printf("+---------+\n");
-  printf("\e[1;12H");
-  printf(" +------+ +------+ +-----+ +-----+ +------+ +-----+ +------+\n");
-  printf("\e[2;13H");
-  printf("| D %02X | | DF %X | | X %X | | P %X | | T %02X | | Q %X | | IE %X |\n",
-    cpu->d, cpu->df, cpu->x, cpu->p, cpu->t, cpu->q, cpu->ie);
-  printf("\e[3;12H");
-  printf(" +------+ +------+ +-----+ +-----+ +------+ +-----+ +------+\n");
-  printf("\e[23;1H");
-  printf("%79s"," ");
-  printf("\e[22;1H");
   }
 
 void debugger(CPU* cpu) {
@@ -1107,6 +1131,7 @@ void debugger(CPU* cpu) {
     if (buffer[0] == 'i' || buffer[0] == 'I') dbgCmdI(cpu, buffer+1);
     if (buffer[0] == 'q' || buffer[0] == 'Q') dbgCmdQ(cpu, buffer+1);
     if (buffer[0] == 't' || buffer[0] == 'T') dbgCmdT(cpu, buffer+1);
+    if (buffer[0] == 'u' || buffer[0] == 'U') dbgCmdU(cpu, buffer+1);
     if (buffer[0] == '/') flag = 0;
     if (buffer[0] == 0) {
       cpuCycle(cpu);

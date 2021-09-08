@@ -1,6 +1,7 @@
 #include "header.h"
 
 char tbuffer[256];
+char tline[80];
 
 #define T_COUNT1      1
 #define T_COUNT2      2
@@ -598,7 +599,6 @@ void cpuCycle(CPU *cpu) {
   word w;
   if (showTrace) {
     sprintf(tbuffer,"R%x:[%04x] ",cpu->p,cpu->r[cpu->p],cpu->ram[cpu->r[cpu->p]]);
-    trace(tbuffer);
     buffer2[1] = 0;
     }
   if (useElfos) {
@@ -806,15 +806,19 @@ void cpuCycle(CPU *cpu) {
   if (useBios) {
     switch (cpu->r[cpu->p]) {
       case 0xff3f:                                                           // f_initcall
-           if (showTrace) trace("CALL  F_INITCALL\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_INITCALL");
            cpu->r[4] = 0xfa7b;
            cpu->r[5] = 0xfa8d;
            cpu->r[3] = cpu->r[6];
            cpu->p = 3;
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xfa7b:                                                           // call
-           if (showTrace) printf("CALL  SCALL %02X%02X\n",cpu->ram[cpu->r[3]],cpu->ram[cpu->r[3]+1]);
+           if (showTrace) {
+             sprintf(tline, "CALL  SCALL %02X%02X",cpu->ram[cpu->r[3]],cpu->ram[cpu->r[3]+1]);
+             strcat(tbuffer, tline);
+             }
            cpu->x = 2;
            cpu->ram[cpu->r[cpu->x]--] = ((cpu->r[6] >> 8) & 0xff);
            cpu->ram[cpu->r[cpu->x]--] = (cpu->r[6] & 0xff);
@@ -823,10 +827,11 @@ void cpuCycle(CPU *cpu) {
            cpu->r[3] |= (cpu->ram[cpu->r[6]++]);
            cpu->p = 3;
            cpu->r[4] = 0xfa7b;
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xfa8d:                                                           // ret
-           if (showTrace) trace("CALL  SRET\n");
+           if (showTrace) strcat(tbuffer, "CALL  SRET");
            cpu->x = 2;
            cpu->r[3] = cpu->r[6];
            cpu->r[cpu->x]++;
@@ -834,6 +839,7 @@ void cpuCycle(CPU *cpu) {
            cpu->r[6] |= ((cpu->ram[cpu->r[cpu->x]]) << 8);
            cpu->p = 3;
            cpu->r[5] = 0xfa8d;
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff00:                                                           // f_boot
@@ -841,25 +847,27 @@ void cpuCycle(CPU *cpu) {
            return;
            break;
       case 0xff03:                                                           // f_type
-           if (showTrace) trace("CALL  F_TYPE\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_TYPE");
            if (cpu->d == 0x0c) printf("\e[2J\e[1;1H");
              else printf("%c",cpu->d);
            fflush(stdout);
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff06:                                                           // f_read
-           if (showTrace) trace("CALL  F_READ\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_READ");
            read(0,&key,1);
            if (key == 127) key = 8;
            printf("%c",key);
            fflush(stdout);
            cpu->d = key;
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff09:                                                           // f_msg
-           if (showTrace) sprintf(tbuffer,"CALL  F_MSG          ");
+           if (showTrace) sprintf(tline,"CALL  F_MSG          ");
            i = cpu->ram[cpu->r[0xf]++];
            while (i != 0) {
              if (showTrace) {
@@ -882,11 +890,12 @@ void cpuCycle(CPU *cpu) {
              }
            fflush(stdout);
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff0f:                                                           // f_input
       case 0xff69:                                                           // f_inputl
-           if (showTrace) trace("CALL  F_INPUT\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_INPUT");
            key = 0;
            while (key != 10 && key != 13 && key != 27) {
              read(0,&key,1);
@@ -909,9 +918,12 @@ void cpuCycle(CPU *cpu) {
              }
            cpu->ram[cpu->r[0xf]] = 0;
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff12:                                                           // f_strcmp
+           if (showTrace) strcat(tbuffer, "CALL  F_STRCMP");
+           if (showTrace) trace(tbuffer);
            while (cpu->ram[cpu->r[0xf]] != 0 &&
                   cpu->ram[cpu->r[0xd]] != 0) {
              if (cpu->ram[cpu->r[0xf]] < cpu->ram[cpu->r[0xd]]) {
@@ -942,14 +954,15 @@ void cpuCycle(CPU *cpu) {
            return;
            break;
       case 0xff15:                                                           // f_ltrim
-           if (showTrace) trace("CALL  F_LTRIM\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_LTRIM");
            key = cpu->ram[cpu->r[15]];
            while (key > 0 && key <= ' ') key = cpu->ram[++cpu->r[15]];
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff18:                                                           // f_strcpy
-           if (showTrace) trace("CALL  F_STRCPY\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_STRCPY");
            i = cpu->ram[cpu->r[0xf]++];
            cpu->ram[cpu->r[0xd]++] = i;
            while (i != 0) {
@@ -957,55 +970,63 @@ void cpuCycle(CPU *cpu) {
              cpu->ram[cpu->r[0xd]++] = i;
              }
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff1b:                                                           // f_memcpy
-           if (showTrace) trace("CALL  F_MEMCPY\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_MEMCPY");
            for (w=0; w<cpu->r[0xc]; w++)
              cpu->ram[cpu->r[0xd]++] = cpu->ram[cpu->r[0xf]++];
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff2d:                                                           // f_setbd
-           if (showTrace) trace("CALL  F_SETBD\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_SETBD");
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff30:                                                           // f_mul16
-           if (showTrace) trace("CALL  F_MUL16\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_MUL16");
            w = cpu->r[0xf];
            w *= cpu->r[0xd];
            cpu->r[0xc] = (w & 0xffff0000) >> 16;
            cpu->r[0xb] = w & 0xffff;
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff33:                                                           // f_div16
-           if (showTrace) trace("CALL  F_DIV16\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_DIV16");
            cpu->r[0xb] = cpu->r[0xf] / cpu->r[0xd];
            cpu->r[0xf] = cpu->r[0xf] % cpu->r[0xd];
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff36:                                                           // f_idereset
-           if (showTrace) trace("CALL  F_IDERESET\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_IDERESET");
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff39:                                                           // f_idewrite
-           if (showTrace) trace("CALL  F_IDEWRITE\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_IDEWRITE");
            ideWrite(cpu);
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff3c:                                                           // f_ideread
-           if (showTrace) trace("CALL  F_IDEREAD\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_IDEREAD");
            ideRead(cpu);
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff45:                                                           // f_hexin
-           if (showTrace) trace("CALL  F_HEXIN\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_HEXIN");
            cpu->r[0xd] = 0;
            while ((cpu->ram[cpu->r[0xf]] >= '0' && cpu->ram[cpu->r[0xf]] <= '9') ||
                   (cpu->ram[cpu->r[0xf]] >= 'a' && cpu->ram[cpu->r[0xf]] <= 'f') ||
@@ -1018,46 +1039,53 @@ void cpuCycle(CPU *cpu) {
                cpu->r[0xd] = (cpu->r[0xd] << 4) + 10 + (cpu->ram[cpu->r[0xf]++] - 'A');
              }
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff48:                                                           // f_hexout2
-           if (showTrace) trace("CALL  F_HEXOUT2\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_HEXOUT2");
            sprintf(buffer,"%02X",(cpu->r[0xd] & 0xff));
            for (i=0; i<strlen(buffer); i++)
              cpu->ram[cpu->r[0xf]++] = buffer[i];
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff4b:                                                           // f_hexout4
-           if (showTrace) trace("CALL  F_HEXOUT4\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_HEXOUT4");
            sprintf(buffer,"%04X",cpu->r[0xd]);
            for (i=0; i<strlen(buffer); i++)
              cpu->ram[cpu->r[0xf]++] = buffer[i];
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff4e:                                                           // f_tty
-           if (showTrace) trace("CALL  F_TTY\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_TTY");
            printf("%c",cpu->d);
            fflush(stdout);
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff57:                                                           // f_freemem
-           if (showTrace) trace("CALL  F_FREEMEM\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_FREEMEM");
            cpu->r[0xf] = ramEnd;
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff5a:                                                           // f_isnum
-           if (showTrace) trace("CALL  F_ISNUM\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_ISNUM");
            if (cpu->d >= '0' && cpu->d <= '9') cpu->df = 1;
            else cpu->df = 0;
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff5d:                                                           // f_atoi
-           if (showTrace) trace("CALL  F_ATOI\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_ATOI");
+           if (showTrace) trace(tbuffer);
            w = cpu->r[15];
            cpu->r[0xd] = 0;
            if (cpu->ram[w] < '0' || cpu->ram[w] > '9') {
@@ -1077,8 +1105,9 @@ void cpuCycle(CPU *cpu) {
       case 0xff60:                                                           // f_uintout
            w = cpu->r[0xd];
            if (showTrace) {
-             sprintf(tbuffer,"CALL  F_UINTOUT      %u\n",w);
-             trace(tbuffer);
+             sprintf(tline,"CALL  F_UINTOUT      %u",w);
+             strcat(tbuffer, tline);
+             if (showTrace) trace(tbuffer);
              }
            sprintf(buffer,"%d",w);
            for (i=0; i<strlen(buffer); i++)
@@ -1089,8 +1118,9 @@ void cpuCycle(CPU *cpu) {
       case 0xff63:                                                           // f_intout
            w = cpu->r[0xd];
            if (showTrace) {
-             sprintf(tbuffer,"CALL  F_UINTOUT      %d\n",w);
-             trace(tbuffer);
+             sprintf(tline,"CALL  F_UINTOUT      %d",w);
+             strcat(tbuffer, tline);
+             if (showTrace) trace(tbuffer);
              }
            if (w & 0x8000) {
              cpu->ram[cpu->r[15]++] = '-';
@@ -1103,7 +1133,7 @@ void cpuCycle(CPU *cpu) {
            return;
            break;
       case 0xff66:                                                           // f_inmsg
-           if (showTrace) sprintf(tbuffer,"CALL  F_INMSG        ");
+           if (showTrace) sprintf(tline,"CALL  F_INMSG        ");
            i = cpu->ram[cpu->r[6]++];
            while (i != 0) {
              if (showTrace) {
@@ -1126,10 +1156,12 @@ void cpuCycle(CPU *cpu) {
              }
            fflush(stdout);
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff6f:                                                           // f_findtkn
-           if (showTrace) trace("CALL  F_FINDTKN\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_FINDTKN");
+           if (showTrace) trace(tbuffer);
            w = cpu->r[0x7];
            cpu->r[0xd] = 0;
            while (cpu->ram[w] != 0) {
@@ -1154,33 +1186,36 @@ void cpuCycle(CPU *cpu) {
            return;
            break;
       case 0xff72:                                                           // f_isalpha
-           if (showTrace) trace("CALL  F_ISALPHA\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_ISALPHA");
            if ((cpu->d >= 'a' && cpu->d <= 'z') ||
                (cpu->d >= 'A' && cpu->d <= 'Z')) cpu->df = 1;
            else cpu->df = 0;
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff75:                                                           // f_ishex
-           if (showTrace) trace("CALL  F_ISHEX\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_ISHEX");
            if ((cpu->d >= 'a' && cpu->d <= 'f') ||
                (cpu->d >= 'A' && cpu->d <= 'F') ||
                (cpu->d >= '0' && cpu->d <= '9')) cpu->df = 1;
            else cpu->df = 0;
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff78:                                                           // f_isalnum
-           if (showTrace) trace("CALL  F_ISALNUM\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_ISALNUM");
            if ((cpu->d >= 'a' && cpu->d <= 'z') ||
                (cpu->d >= 'A' && cpu->d <= 'Z') ||
                (cpu->d >= '0' && cpu->d <= '9')) cpu->df = 1;
            else cpu->df = 0;
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff7b:                                                           // f_idnum
-           if (showTrace) trace("CALL  F_IDNUM\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_IDNUM");
            w = cpu->r[15];
            if (cpu->ram[w] < '0' || cpu->ram[w] > '9') {
              cpu->df = 1;
@@ -1208,20 +1243,24 @@ void cpuCycle(CPU *cpu) {
              }
            cpu->df = 1;
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff7e:                                                           // f_isterm
-           if (showTrace) trace("CALL  F_ISALNUM\n");
+           if (showTrace) strcat(tbuffer, "CALL  F_ISALNUM");
            if ((cpu->d >= 'a' && cpu->d <= 'z') ||
                (cpu->d >= 'A' && cpu->d <= 'Z') ||
                (cpu->d >= '0' && cpu->d <= '9')) cpu->df = 0;
            else cpu->df = 1;
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return;
            break;
       case 0xff81:                                                          // f_getdev
+           if (showTrace) strcat(tbuffer, "CALL  F_GETDEV");
            cpu->r[0xf] = 0x0005;
            sret(cpu);
+           if (showTrace) trace(tbuffer);
            return; 
            break;
       }
@@ -1253,43 +1292,46 @@ void cpuCycle(CPU *cpu) {
   switch (cpu->i) {
     case 0:                                                                // LDN
          if (cpu->n == 0) {                                                // IDL
-           if (showTrace) trace("IDL\n");
+           if (showTrace) strcat(tbuffer, "IDL");
            cpu->idle = 1;
            }
          else {
            cpu->d = readMem(cpu, cpu->r[cpu->n]);
            if (showTrace) {
-             sprintf(tbuffer,"LDN   R%X             D=%02x [%04x]\n",cpu->n,cpu->d,cpu->r[cpu->n]);
-             trace(tbuffer);
+             sprintf(tline,"LDN   R%X             D=%02x [%04x]",cpu->n,cpu->d,cpu->r[cpu->n]);
+             strcat(tbuffer, tline);
              }
            }
          break;
     case 1:                                                                // INC
          cpu->r[cpu->n]++;
          if (showTrace) {
-           sprintf(tbuffer,"INC   R%X             R%X=%04x\n",cpu->n,cpu->n,cpu->r[cpu->n]);
-           trace(tbuffer);
+           sprintf(tline,"INC   R%X             R%X=%04x",cpu->n,cpu->n,cpu->r[cpu->n]);
+           strcat(tbuffer, tline);
            }
          break;
     case 2:                                                                // DEC
          cpu->r[cpu->n]--;
          if (showTrace) {
-           sprintf(tbuffer,"DEC   R%X             R%X=%04x\n",cpu->n,cpu->n,cpu->r[cpu->n]);
-           trace(tbuffer);
+           sprintf(tline,"DEC   R%X             R%X=%04x",cpu->n,cpu->n,cpu->r[cpu->n]);
+           strcat(tbuffer, tline);
            }
          break;
     case 3:
          switch (cpu->n) {
            case 0x00:                                                      // BR
                 if (showTrace) {
-                  sprintf(tbuffer,"BR    %02X             *\n",readMem(cpu, cpu->r[cpu->p]));
-                  trace(tbuffer);
+                  sprintf(tline,"BR    %02X             *",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
                   }
                 cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                  readMem(cpu, cpu->r[cpu->p]);
                 break;
            case 0x01:                                                      // BQ
-                if (showTrace) printf("BQ    %02X\n",readMem(cpu, cpu->r[cpu->p]));
+                if (showTrace) {
+                  sprintf(tline, "BQ    %02X",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->q)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    readMem(cpu, cpu->r[cpu->p]);
@@ -1297,7 +1339,10 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p]++;
                 break;
            case 0x02:                                                      // BZ
-                if (showTrace) printf("BZ    %02X\n",readMem(cpu, cpu->r[cpu->p]));
+                if (showTrace) {
+                  sprintf(tline, "BZ    %02X",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->d == 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    readMem(cpu, cpu->r[cpu->p]);
@@ -1305,7 +1350,10 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p]++;
                 break;
            case 0x03:                                                      // BDF
-                if (showTrace) printf("BDF   %02X\n",readMem(cpu, cpu->r[cpu->p]));
+                if (showTrace) {
+                  sprintf(tline, "BDF   %02X",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->df != 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    readMem(cpu, cpu->r[cpu->p]);
@@ -1313,7 +1361,10 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p]++;
                 break;
            case 0x04:                                                      // B1
-                if (showTrace) printf("B1    %02X\n",readMem(cpu, cpu->r[cpu->p]));
+                if (showTrace) {
+                  sprintf(tline, "B1    %02X",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->ef[0] != 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    readMem(cpu, cpu->r[cpu->p]);
@@ -1321,7 +1372,10 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p]++;
                 break;
            case 0x05:                                                      // B2
-                if (showTrace) printf("B2    %02X\n",readMem(cpu, cpu->r[cpu->p]));
+                if (showTrace) {
+                  sprintf(tline, "B2    %02X",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->ef[1] != 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    readMem(cpu, cpu->r[cpu->p]);
@@ -1329,7 +1383,10 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p]++;
                 break;
            case 0x06:                                                      // B3
-                if (showTrace) printf("B3    %02X\n",readMem(cpu, cpu->r[cpu->p]));
+                if (showTrace) {
+                  sprintf(tline, "B3    %02X",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->ef[2] != 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    readMem(cpu, cpu->r[cpu->p]);
@@ -1337,7 +1394,10 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p]++;
                 break;
            case 0x07:                                                      // B4
-                if (showTrace) printf("B4    %02X\n",readMem(cpu, cpu->r[cpu->p]));
+                if (showTrace) {
+                  sprintf(tline, "B4    %02X",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->ef[3] != 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    readMem(cpu, cpu->r[cpu->p]);
@@ -1345,11 +1405,14 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p]++;
                 break;
            case 0x08:                                                      // NBR
-                if (showTrace) trace("NBR\n");
+                if (showTrace) strcat(tbuffer, "NBR\n");
                 cpu->r[cpu->p]++;
                 break;
            case 0x09:                                                      // BNQ
-                if (showTrace) printf("BNQ   %02X\n",readMem(cpu, cpu->r[cpu->p]));
+                if (showTrace) {
+                  sprintf(tline, "BNQ   %02X",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->q == 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    readMem(cpu, cpu->r[cpu->p]);
@@ -1357,7 +1420,10 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p]++;
                 break;
            case 0x0a:                                                      // BNZ
-                if (showTrace) printf("BNZ   %02X\n",readMem(cpu, cpu->r[cpu->p]));
+                if (showTrace) {
+                  sprintf(tline, "BNZ   %02X",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->d != 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    readMem(cpu, cpu->r[cpu->p]);
@@ -1365,7 +1431,10 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p]++;
                 break;
            case 0x0b:                                                      // BNF
-                if (showTrace) printf("BNF   %02X\n",readMem(cpu, cpu->r[cpu->p]));
+                if (showTrace) {
+                  sprintf(tline, "BNF   %02X",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->df == 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    readMem(cpu, cpu->r[cpu->p]);
@@ -1373,7 +1442,10 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p]++;
                 break;
            case 0x0c:                                                      // BN1
-                if (showTrace) printf("BN1   %02X\n",readMem(cpu, cpu->r[cpu->p]));
+                if (showTrace) {
+                  sprintf(tline, "BN1   %02X",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->ef[0] == 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    readMem(cpu, cpu->r[cpu->p]);
@@ -1381,7 +1453,10 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p]++;
                 break;
            case 0x0d:                                                      // BN2
-                if (showTrace) printf("BN2   %02X\n",readMem(cpu, cpu->r[cpu->p]));
+                if (showTrace) {
+                  sprintf(tline, "BN2   %02X",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->ef[1] == 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    readMem(cpu, cpu->r[cpu->p]);
@@ -1389,7 +1464,10 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p]++;
                 break;
            case 0x0e:                                                      // BN3
-                if (showTrace) printf("BN3   %02X\n",readMem(cpu, cpu->r[cpu->p]));
+                if (showTrace) {
+                  sprintf(tline, "BN3   %02X",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->ef[2] == 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    readMem(cpu, cpu->r[cpu->p]);
@@ -1397,7 +1475,10 @@ void cpuCycle(CPU *cpu) {
                   cpu->r[cpu->p]++;
                 break;
            case 0x0f:                                                      // BN4
-                if (showTrace) printf("BN4   %02X\n",readMem(cpu, cpu->r[cpu->p]));
+                if (showTrace) {
+                  sprintf(tline, "BN4   %02X",readMem(cpu, cpu->r[cpu->p]));
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->ef[3] == 0)
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) |
                                    readMem(cpu, cpu->r[cpu->p]);
@@ -1409,14 +1490,14 @@ void cpuCycle(CPU *cpu) {
     case 4:                                                                // LDA
          cpu->d = readMem(cpu, cpu->r[cpu->n]++);
          if (showTrace) {
-           sprintf(tbuffer,"LDA   R%X             D=%02x\n",cpu->n,cpu->d);
-           trace(tbuffer);
+           sprintf(tline,"LDA   R%X             D=%02x",cpu->n,cpu->d);
+           strcat(tbuffer, tline);
            }
          break;
     case 5:                                                                // STR
          if (showTrace) {
-           sprintf(tbuffer,"STR   R%X             [%04x]=%02x\n",cpu->n,cpu->r[cpu->n], cpu->d);
-           trace(tbuffer);
+           sprintf(tline,"STR   R%X             [%04x]=%02x",cpu->n,cpu->r[cpu->n], cpu->d);
+           strcat(tbuffer, tline);
            }
          writeMem(cpu, cpu->r[cpu->n], cpu->d);
          break;
@@ -1425,8 +1506,8 @@ void cpuCycle(CPU *cpu) {
            case 0x00:                                                      // IRX
                 cpu->r[cpu->x]++;
                 if (showTrace) {
-                  sprintf(tbuffer,"IRX                  R%X=%04x\n",cpu->x,cpu->r[cpu->x]);
-                  trace(tbuffer);
+                  sprintf(tline,"IRX                  R%X=%04x",cpu->x,cpu->r[cpu->x]);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x08:                                                      // 1805 inst
@@ -1437,14 +1518,14 @@ void cpuCycle(CPU *cpu) {
     case 7:
          switch (cpu->n) {
            case 0x00:                                                      // RET
-                if (showTrace) trace("RET\n");
+                if (showTrace) strcat(tbuffer, "RET");
                 i = readMem(cpu, cpu->r[cpu->x]++);
                 cpu->p = i & 0xf;
                 cpu->x = (i >> 4) & 0xf;
                 cpu->ie = 1;
                 break;
            case 0x01:                                                      // DIS
-                if (showTrace) trace("DIS\n");
+                if (showTrace) strcat(tbuffer, "DIS");
                 i = readMem(cpu, cpu->r[cpu->x]++);
                 cpu->p = i & 0xf;
                 cpu->x = (i >> 4) & 0xf;
@@ -1453,14 +1534,14 @@ void cpuCycle(CPU *cpu) {
            case 0x02:                                                      // LDXA
                 cpu->d = readMem(cpu, cpu->r[cpu->x]++);
                 if (showTrace) {
-                  sprintf(tbuffer,"LDXA                 D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"LDXA                 D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x03:                                                      // STXD
                 if (showTrace) {
-                  sprintf(tbuffer,"STXD                 [%04x]=%02x\n",cpu->r[cpu->x], cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"STXD                 [%04x]=%02x",cpu->r[cpu->x], cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 writeMem(cpu, cpu->r[cpu->x], cpu->d);
                 cpu->r[cpu->x]--;
@@ -1470,8 +1551,8 @@ void cpuCycle(CPU *cpu) {
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 if (showTrace) {
-                  sprintf(tbuffer,"ADC                  D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"ADC                  D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x05:                                                      // SDB
@@ -1479,46 +1560,44 @@ void cpuCycle(CPU *cpu) {
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 if (showTrace) {
-                  sprintf(tbuffer,"SDB                  D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"SDB                  D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x06:                                                      // SHRC
-                if (showTrace) trace("SHRC\n");
                 i = (cpu->d & 1);
                 cpu->d = (cpu->d >> 1) | (cpu->df << 7);
                 cpu->df = i;
                 if (showTrace) {
-                  sprintf(tbuffer,"SHRC                 D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"SHRC                 D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x07:                                                      // SMB
-                if (showTrace) trace("SMB\n");
                 w = cpu->d + ((~readMem(cpu, cpu->r[cpu->x])) & 0xff) + cpu->df;
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 if (showTrace) {
-                  sprintf(tbuffer,"SMB                  D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"SMB                  D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x08:                                                      // SAV
-                if (showTrace) trace("SAV\n");
+                if (showTrace) strcat(tbuffer, "SAV");
                 cpu->ram[cpu->r[cpu->x]] = cpu->t;
                 break;
            case 0x09:                                                      // MARK
-                if (showTrace) trace("MARK\n");
+                if (showTrace) strcat(tbuffer, "MARK");
                 cpu->t = (cpu->x << 4) | cpu->p;
                 cpu->ram[cpu->r[2]--] = cpu->t;
                 cpu->x = cpu->p;
                 break;
            case 0x0a:                                                      // REQ
-                if (showTrace) trace("REQ\n");
+                if (showTrace) strcat(tbuffer, "REQ");
                 cpu->q = 0;
                 break;
            case 0x0b:                                                      // SEQ
-                if (showTrace) trace("SEQ\n");
+                if (showTrace) strcat(tbuffer, "SEQ");
                 cpu->q = 1;
                 break;
            case 0x0c:                                                      // ADCI
@@ -1526,8 +1605,8 @@ void cpuCycle(CPU *cpu) {
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 if (showTrace) {
-                  sprintf(tbuffer,"ADCI  %02x             D=%02x\n",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"ADCI  %02x             D=%02x",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0d:                                                      // SDBI
@@ -1535,18 +1614,17 @@ void cpuCycle(CPU *cpu) {
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 if (showTrace) {
-                  sprintf(tbuffer,"SDBI  %02x             D=%02x\n",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"SDBI  %02x             D=%02x",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0e:                                                      // SHLC
-                if (showTrace) printf("SHLC\n");
                 i = (cpu->d & 0x80) >> 7;
                 cpu->d = (cpu->d << 1) | cpu->df;
                 cpu->df = i;
                 if (showTrace) {
-                  sprintf(tbuffer,"SHLC                 D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"SHLC                 D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0f:                                                      // SMBI
@@ -1554,8 +1632,8 @@ void cpuCycle(CPU *cpu) {
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 if (showTrace) {
-                  sprintf(tbuffer,"SMBI  %02x             D=%02x\n",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"SMBI  %02x             D=%02x",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            }
@@ -1563,29 +1641,29 @@ void cpuCycle(CPU *cpu) {
     case 8:                                                                // GLO
          cpu->d = cpu->r[cpu->n] & 0xff;
          if (showTrace) {
-           sprintf(tbuffer,"GLO   R%x             D=%02x\n",cpu->n,cpu->d);
-           trace(tbuffer);
+           sprintf(tline,"GLO   R%x             D=%02x",cpu->n,cpu->d);
+           strcat(tbuffer, tline);
            }
          break;
     case 9:                                                                // GHI
          cpu->d = (cpu->r[cpu->n] >> 8) & 0xff;
          if (showTrace) {
-           sprintf(tbuffer,"GHI   R%x             D=%02x\n",cpu->n,cpu->d);
-           trace(tbuffer);
+           sprintf(tline,"GHI   R%x             D=%02x",cpu->n,cpu->d);
+           strcat(tbuffer, tline);
            }
          break;
     case 0x0a:                                                             // PLO
          cpu->r[cpu->n] = (cpu->r[cpu->n] & 0xff00) | cpu->d;
          if (showTrace) {
-           sprintf(tbuffer,"PLO   R%X             R%X=%04x\n",cpu->n,cpu->n,cpu->r[cpu->n]);
-           trace(tbuffer);
+           sprintf(tline,"PLO   R%X             R%X=%04x",cpu->n,cpu->n,cpu->r[cpu->n]);
+           strcat(tbuffer, tline);
            }
          break;
     case 0x0b:                                                             // PHI
          cpu->r[cpu->n] = (cpu->r[cpu->n] & 0x00ff) | (cpu->d << 8);
          if (showTrace) {
-           sprintf(tbuffer,"PHI   R%X             R%X=%04x\n",cpu->n,cpu->n,cpu->r[cpu->n]);
-           trace(tbuffer);
+           sprintf(tline,"PHI   R%X             R%X=%04x",cpu->n,cpu->n,cpu->r[cpu->n]);
+           strcat(tbuffer, tline);
            }
          break;
     case 0x0c:
@@ -1595,133 +1673,157 @@ void cpuCycle(CPU *cpu) {
                 cpu->r[cpu->p] = (readMem(cpu, cpu->r[cpu->p]) << 8) |
                                   readMem(cpu, cpu->r[cpu->p]+1);
                 if (showTrace) {
-                  sprintf(tbuffer,"LBR   %04x           *\n",cpu->r[cpu->p]);
-                  trace(tbuffer);
+                  sprintf(tline,"LBR   %04x           *",cpu->r[cpu->p]);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x01:                                                      // LBQ
                 if (showTrace) {
-                  sprintf(tbuffer,"LBQ   %02X%02X           ",readMem(cpu, cpu->r[cpu->p]),readMem(cpu, cpu->r[cpu->p]+1));
+                  sprintf(tline,"LBQ   %02X%02X           ",readMem(cpu, cpu->r[cpu->p]),readMem(cpu, cpu->r[cpu->p]+1));
                   }
                 if (cpu->q) {
                   cpu->r[cpu->p] = (readMem(cpu, cpu->r[cpu->p]) << 8) |
                                     readMem(cpu, cpu->r[cpu->p]+1);
-                  if (showTrace) strcat(tbuffer,"*\n");
+                  if (showTrace) strcat(tline,"*");
                   }
                 else {
                   cpu->r[cpu->p] += 2;
-                  if (showTrace) strcat(tbuffer,"-\n");
+                  if (showTrace) strcat(tline,"-");
                   }
-                if (showTrace) trace(tbuffer);
+                if (showTrace) strcat(tbuffer, tline);
                 break;
            case 0x02:                                                      // LBZ
                 if (showTrace) {
-                  sprintf(tbuffer,"LBZ   %02X%02X           ",readMem(cpu, cpu->r[cpu->p]),readMem(cpu, cpu->r[cpu->p]+1));
+                  sprintf(tline,"LBZ   %02X%02X           ",readMem(cpu, cpu->r[cpu->p]),readMem(cpu, cpu->r[cpu->p]+1));
                   }
                 if (cpu->d == 0) {
                   cpu->r[cpu->p] = (readMem(cpu, cpu->r[cpu->p]) << 8) |
                                     readMem(cpu, cpu->r[cpu->p]+1);
-                  if (showTrace) strcat(tbuffer,"*\n");
+                  if (showTrace) strcat(tline,"*");
                   }
                 else {
                   cpu->r[cpu->p] += 2;
-                  if (showTrace) strcat(tbuffer,"-\n");
+                  if (showTrace) strcat(tline,"-");
                   }
-                if (showTrace) trace(tbuffer);
+                if (showTrace) strcat(tbuffer, tline);
                 break;
            case 0x03:                                                      // LBDF
                 if (showTrace) {
-                  sprintf(tbuffer,"LBDF  %02X%02X           ",readMem(cpu, cpu->r[cpu->p]),readMem(cpu, cpu->r[cpu->p]+1));
+                  sprintf(tline,"LBDF  %02X%02X           ",readMem(cpu, cpu->r[cpu->p]),readMem(cpu, cpu->r[cpu->p]+1));
                   }
                 if (cpu->df != 0) {
                   cpu->r[cpu->p] = (readMem(cpu, cpu->r[cpu->p]) << 8) |
                                     readMem(cpu, cpu->r[cpu->p]+1);
-                  if (showTrace) strcat(tbuffer,"*\n");
+                  if (showTrace) strcat(tline,"*");
                   }
                 else {
                   cpu->r[cpu->p] += 2;
-                  if (showTrace) strcat(tbuffer,"-\n");
+                  if (showTrace) strcat(tline,"-");
                   }
-                if (showTrace) trace(tbuffer);
+                if (showTrace) strcat(tbuffer, tline);
                 break;
            case 0x04:                                                      // NOP
-                if (showTrace) trace("NOP");
+                if (showTrace) strcat(tbuffer, "NOP");
                 break;
            case 0x05:                                                      // LSNQ
-                if (showTrace) printf("LSNQ  R%X\n",cpu->n);
+                if (showTrace) {
+                  sprintf(tline, "LSNQ  R%X",cpu->n);
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->q == 0) cpu->r[cpu->p] += 2;
                 break;
            case 0x06:                                                      // LSNZ
-                if (showTrace) printf("LSNZ  R%X\n",cpu->n);
+                if (showTrace) {
+                  sprintf(tline, "LSNZ  R%X",cpu->n);
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->d != 0) cpu->r[cpu->p] += 2;
                 break;
            case 0x07:                                                      // LSNF
-                if (showTrace) printf("LSNF  R%X\n",cpu->n);
+                if (showTrace) {
+                  sprintf(tline, "LSNF  R%X",cpu->n);
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->df == 0) cpu->r[cpu->p] += 2;
                 break;
            case 0x08:                                                      // NLBR
-                if (showTrace) printf("NLBR  R%X\n",cpu->n);
+                if (showTrace) {
+                  sprintf(tline, "NLBR  R%X",cpu->n);
+                  strcat(tbuffer, tline);
+                  }
                 cpu->r[cpu->p] += 2;
                 break;
            case 0x09:                                                      // LBNQ
                 if (showTrace) {
-                  sprintf(tbuffer,"LBNQ  %02X%02X           ",readMem(cpu, cpu->r[cpu->p]),readMem(cpu, cpu->r[cpu->p]+1));
+                  sprintf(tline,"LBNQ  %02X%02X           ",readMem(cpu, cpu->r[cpu->p]),readMem(cpu, cpu->r[cpu->p]+1));
                   }
                 if (cpu->q == 0) {
                   cpu->r[cpu->p] = (readMem(cpu, cpu->r[cpu->p]) << 8) |
                                     readMem(cpu, cpu->r[cpu->p]+1);
-                  if (showTrace) strcat(tbuffer,"*\n");
+                  if (showTrace) strcat(tline,"*");
                   }
                 else {
                   cpu->r[cpu->p] += 2;
-                  if (showTrace) strcat(tbuffer,"-\n");
+                  if (showTrace) strcat(tline,"-");
                   }
-                if (showTrace) trace(tbuffer);
+                if (showTrace) strcat(tbuffer, tline);
                 break;
            case 0x0a:                                                      // LBNZ
                 if (showTrace) {
-                  sprintf(tbuffer,"LBNZ  %02X%02X           ",readMem(cpu, cpu->r[cpu->p]),readMem(cpu, cpu->r[cpu->p]+1));
+                  sprintf(tline,"LBNZ  %02X%02X           ",readMem(cpu, cpu->r[cpu->p]),readMem(cpu, cpu->r[cpu->p]+1));
                   }
                 if (cpu->d != 0) {
                   cpu->r[cpu->p] = (readMem(cpu, cpu->r[cpu->p]) << 8) |
                                     readMem(cpu, cpu->r[cpu->p]+1);
-                  if (showTrace) strcat(tbuffer,"*\n");
+                  if (showTrace) strcat(tline,"*");
                   }
                 else {
                   cpu->r[cpu->p] += 2;
-                  if (showTrace) strcat(tbuffer,"-\n");
+                  if (showTrace) strcat(tline,"-");
                   }
-                if (showTrace) trace(tbuffer);
+                if (showTrace) strcat(tbuffer, tline);
                 break;
            case 0x0b:                                                      // LBNF
                 if (showTrace) {
-                  sprintf(tbuffer,"LBNF  %02X%02X           ",readMem(cpu, cpu->r[cpu->p]),readMem(cpu, cpu->r[cpu->p]+1));
+                  sprintf(tline,"LBNF  %02X%02X           ",readMem(cpu, cpu->r[cpu->p]),readMem(cpu, cpu->r[cpu->p]+1));
                   }
                 if (cpu->df == 0) {
                   cpu->r[cpu->p] = (readMem(cpu, cpu->r[cpu->p]) << 8) |
                                     readMem(cpu, cpu->r[cpu->p]+1);
-                  if (showTrace) strcat(tbuffer,"*\n");
+                  if (showTrace) strcat(tline,"*");
                   }
                 else {
                   cpu->r[cpu->p] += 2;
-                  if (showTrace) strcat(tbuffer,"-\n");
+                  if (showTrace) strcat(tline,"-");
                   }
-                if (showTrace) trace(tbuffer);
+                if (showTrace) strcat(tbuffer, tline);
                 break;
            case 0x0c:                                                      // LSIE
-                if (showTrace) printf("LSIE  R%X\n",cpu->n);
+                if (showTrace) {
+                  sprintf(tline, "LSIE  R%X",cpu->n);
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->ie != 0) cpu->r[cpu->p] += 2;
                 break;
            case 0x0d:                                                      // LSQ
-                if (showTrace) printf("LSQ   R%X\n",cpu->n);
+                if (showTrace) {
+                  sprintf(tline, "LSQ   R%X",cpu->n);
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->q != 0) cpu->r[cpu->p] += 2;
                 break;
            case 0x0e:                                                      // LSZ
-                if (showTrace) printf("LSZ   R%X\n",cpu->n);
+                if (showTrace) {
+                  sprintf(tline, "LSZ   R%X",cpu->n);
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->d == 0) cpu->r[cpu->p] += 2;
                 break;
            case 0x0f:                                                      // LSDF
-                if (showTrace) printf("LSDF  R%X\n",cpu->n);
+                if (showTrace) {
+                  sprintf(tline, "LSDF  R%X",cpu->n);
+                  strcat(tbuffer, tline);
+                  }
                 if (cpu->df != 0) cpu->r[cpu->p] += 2;
                 break;
            }
@@ -1729,15 +1831,15 @@ void cpuCycle(CPU *cpu) {
     case 0x0d:                                                             // SEP
          cpu->p = cpu->n;
          if (showTrace) {
-           sprintf(tbuffer,"SEP   R%x             P=%x\n",cpu->n,cpu->p);
-           trace(tbuffer);
+           sprintf(tline,"SEP   R%x             P=%x",cpu->n,cpu->p);
+           strcat(tbuffer, tline);
            }
          break;
     case 0x0e:                                                             // SEX
          cpu->x = cpu->n;
          if (showTrace) {
-           sprintf(tbuffer,"SEX   R%x             X=%x\n",cpu->n,cpu->x);
-           trace(tbuffer);
+           sprintf(tline,"SEX   R%x             X=%x",cpu->n,cpu->x);
+           strcat(tbuffer, tline);
            }
          break;
     case 0x0f:
@@ -1745,29 +1847,29 @@ void cpuCycle(CPU *cpu) {
            case 0x00:                                                      // LDX
                 cpu->d = readMem(cpu, cpu->r[cpu->x]);
                 if (showTrace) {
-                  sprintf(tbuffer,"LDX                  D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"LDX                  D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x01:                                                      // OR
                 cpu->d |= readMem(cpu, cpu->r[cpu->x]);
                 if (showTrace) {
-                  sprintf(tbuffer,"OR                   D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"OR                   D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x02:                                                      // AND
                 cpu->d &= readMem(cpu, cpu->r[cpu->x]);
                 if (showTrace) {
-                  sprintf(tbuffer,"AND                  D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"AND                  D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x03:                                                      // XOR
                 cpu->d ^= readMem(cpu, cpu->r[cpu->x]);
                 if (showTrace) {
-                  sprintf(tbuffer,"XOR                  D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"XOR                  D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x04:                                                      // ADD
@@ -1775,8 +1877,8 @@ void cpuCycle(CPU *cpu) {
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 if (showTrace) {
-                  sprintf(tbuffer,"ADD                  D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"ADD                  D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x05:                                                      // SD
@@ -1784,8 +1886,8 @@ void cpuCycle(CPU *cpu) {
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 if (showTrace) {
-                  sprintf(tbuffer,"SD                   D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"SD                   D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x06:                                                      // SHR
@@ -1793,8 +1895,8 @@ void cpuCycle(CPU *cpu) {
                 cpu->d = (cpu->d >> 1);
                 cpu->df = i;
                 if (showTrace) {
-                  sprintf(tbuffer,"SHR                  D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"SHR                  D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x07:                                                      // SM
@@ -1802,36 +1904,36 @@ void cpuCycle(CPU *cpu) {
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 if (showTrace) {
-                  sprintf(tbuffer,"SM                   D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"SM                   D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x08:                                                      // LDI
                 cpu->d = readMem(cpu, cpu->r[cpu->p]++);
                 if (showTrace) {
-                  sprintf(tbuffer,"LDI   %02x             D=%02x\n",cpu->d,cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"LDI   %02x             D=%02x",cpu->d,cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x09:                                                      // ORI
                 cpu->d |= readMem(cpu, cpu->r[cpu->p]++);
                 if (showTrace) {
-                  sprintf(tbuffer,"ORI   %02x             D=%02x\n",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"ORI   %02x             D=%02x",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0a:                                                      // ANI
                 cpu->d &= readMem(cpu, cpu->r[cpu->p]++);
                 if (showTrace) {
-                  sprintf(tbuffer,"ANI   %02x             D=%02x\n",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"ANI   %02x             D=%02x",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0b:                                                      // XRI
                 cpu->d ^= readMem(cpu, cpu->r[cpu->p]++);
                 if (showTrace) {
-                  sprintf(tbuffer,"XRI   %02x             D=%02x\n",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"XRI   %02x             D=%02x",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0c:                                                      // ADI
@@ -1839,8 +1941,8 @@ void cpuCycle(CPU *cpu) {
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 if (showTrace) {
-                  sprintf(tbuffer,"ADI   %02x             D=%02x\n",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"ADI   %02x             D=%02x",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0d:                                                      // SDI
@@ -1848,8 +1950,8 @@ void cpuCycle(CPU *cpu) {
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 if (showTrace) {
-                  sprintf(tbuffer,"SDI   %02x             D=%02x\n",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"SDI   %02x             D=%02x",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0e:                                                      // SHL
@@ -1857,8 +1959,8 @@ void cpuCycle(CPU *cpu) {
                 cpu->d = (cpu->d << 1);
                 cpu->df = i;
                 if (showTrace) {
-                  sprintf(tbuffer,"SHL                  D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"SHL                  D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0f:                                                      // SMI
@@ -1866,13 +1968,14 @@ void cpuCycle(CPU *cpu) {
                 cpu->d = w & 0xff;
                 cpu->df = (w > 255) ? 1 : 0;
                 if (showTrace) {
-                  sprintf(tbuffer,"SMI   %02x             D=%02x\n",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"SMI   %02x             D=%02x",readMem(cpu, cpu->r[cpu->p]-1),cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            }
          break;
     }
+  if (showTrace) trace(tbuffer);
   if (use1805 && cpu->crunning && cpu->cmode == T_TIMER) {
     while (cycles > 0) {
       cycles--;

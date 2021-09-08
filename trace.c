@@ -1,6 +1,7 @@
 #include "header.h"
 
 void trace(char* message) {
-  printf("%s",message);
+  if (useVisual) output(message);
+    else printf("%s\n",message);
   }
 
