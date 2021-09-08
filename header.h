@@ -51,6 +51,7 @@ LINK byte runFlag;
 LINK byte use1805;
 LINK byte useBios;
 LINK byte useElfos;
+LINK byte useVisual;
 LINK byte elfos4;
 LINK byte runDebugger;
 LINK byte showMap;

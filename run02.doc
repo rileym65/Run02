@@ -8,6 +8,7 @@ Command line switches:
   -a args         - Set arguments for Elf/OS executable
   -b file         - Load binary file
   -nb             - Do not use simulated BIOS
+  -v              - Run debugger in visual mode
   -ram=nnnn-mmmm  - Mark region from nnnn to mmmm as RAM
   -rom=nnnn-mmmm  - Mark region from nnnn to mmmm as ROM
   -none=nnnn-mmmm - Mark region from nnnn to mmmm as None
