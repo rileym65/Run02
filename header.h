@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+typedef u_int64_t qword;
+typedef u_int32_t dword;
 typedef u_int16_t word;
 typedef u_int8_t byte;
 

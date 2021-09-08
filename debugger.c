@@ -487,6 +487,7 @@ word disassem(CPU* cpu, word address) {
 
     }
   strcat(dline, tmp);
+  while (strlen(dline) < 50) strcat(dline," ");
   return address;
   }
 

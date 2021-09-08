@@ -519,6 +519,68 @@ void doDealloc(CPU* cpu) {
   cpu->ram[0x443] = (heap & 0x00ff);
   }
 
+void ideBoot(CPU* cpu) {
+  int disk;
+  byte* ram;
+  disk = open("disk1.ide", O_RDONLY);
+  if (disk < 0) {
+    printf("Attempt to boot non-existant disk, aborting.\n");
+    exit(1);
+    }
+  cpu->r[4] = 0xfa7b;
+  cpu->r[5] = 0xfa8d;
+  cpu->r[3] = 0x0106;
+  cpu->r[2] = 0x00f0;
+  cpu->p = 3;
+  cpu->x = 2;
+  ram = cpu->ram;
+  ram += 0x0100;
+  read(disk, ram, 512);
+  close(disk);
+  }
+
+void ideRead(CPU* cpu) {
+  int disk;
+  qword pos;
+  byte* ram;
+  disk = open("disk1.ide", O_RDONLY);
+  if (disk < 0) {
+    printf("Attempt to read non-existant disk, aborting.\n");
+    exit(1);
+    }
+  pos = cpu->r[8] & 0x0000ffff;
+  pos = (pos << 16) | cpu->r[7];
+  pos <<= 9;
+  lseek(disk, pos, SEEK_SET);
+  ram = cpu->ram;
+  ram += cpu->r[15];
+  read(disk, ram, 512);
+  cpu->r[15] += 512;
+  cpu->df = 0;
+  close(disk);
+  }
+
+void ideWrite(CPU* cpu) {
+  int disk;
+  qword pos;
+  byte* ram;
+  disk = open("disk1.ide", O_WRONLY);
+  if (disk < 0) {
+    printf("Attempt to write non-existant disk, aborting.\n");
+    exit(1);
+    }
+  pos = cpu->r[8] & 0x0000ffff;
+  pos = (pos << 16) | cpu->r[7];
+  pos <<= 9;
+  lseek(disk, pos, SEEK_SET);
+  ram = cpu->ram;
+  ram += cpu->r[15];
+  write(disk, ram, 512);
+  cpu->r[15] += 512;
+  cpu->df = 0;
+  close(disk);
+  }
+
 void cpuCycle(CPU *cpu) {
   byte i;
   word d;
@@ -748,6 +810,7 @@ void cpuCycle(CPU *cpu) {
            cpu->r[4] = 0xfa7b;
            cpu->r[5] = 0xfa8d;
            cpu->r[3] = cpu->r[6];
+           cpu->p = 3;
            return;
            break;
       case 0xfa7b:                                                           // call
@@ -771,6 +834,10 @@ void cpuCycle(CPU *cpu) {
            cpu->r[6] |= ((cpu->ram[cpu->r[cpu->x]]) << 8);
            cpu->p = 3;
            cpu->r[5] = 0xfa8d;
+           return;
+           break;
+      case 0xff00:                                                           // f_boot
+           ideBoot(cpu);
            return;
            break;
       case 0xff03:                                                           // f_type
@@ -844,6 +911,36 @@ void cpuCycle(CPU *cpu) {
            sret(cpu);
            return;
            break;
+      case 0xff12:                                                           // f_strcmp
+           while (cpu->ram[cpu->r[0xf]] != 0 &&
+                  cpu->ram[cpu->r[0xd]] != 0) {
+             if (cpu->ram[cpu->r[0xf]] < cpu->ram[cpu->r[0xd]]) {
+               cpu->d = 0xff;
+               sret(cpu);
+               return;
+               }
+             if (cpu->ram[cpu->r[0xf]] > cpu->ram[cpu->r[0xd]]) {
+               cpu->d = 0x01;
+               sret(cpu);
+               return;
+               }
+             cpu->r[0xf]++;
+             cpu->r[0xd]++;
+             }
+           if (cpu->ram[cpu->r[0xf]] == cpu->ram[cpu->r[0xd]]) {
+             cpu->d = 0;
+             sret(cpu);
+             return;
+             }
+           if (cpu->ram[cpu->r[0xf]] == 0) {
+             cpu->d = 0xff;
+             sret(cpu);
+             return;
+             }
+           cpu->d = 0x01;
+           sret(cpu);
+           return;
+           break;
       case 0xff15:                                                           // f_ltrim
            if (showTrace) trace("CALL  F_LTRIM\n");
            key = cpu->ram[cpu->r[15]];
@@ -887,6 +984,23 @@ void cpuCycle(CPU *cpu) {
            if (showTrace) trace("CALL  F_DIV16\n");
            cpu->r[0xb] = cpu->r[0xf] / cpu->r[0xd];
            cpu->r[0xf] = cpu->r[0xf] % cpu->r[0xd];
+           sret(cpu);
+           return;
+           break;
+      case 0xff36:                                                           // f_idereset
+           if (showTrace) trace("CALL  F_IDERESET\n");
+           sret(cpu);
+           return;
+           break;
+      case 0xff39:                                                           // f_idewrite
+           if (showTrace) trace("CALL  F_IDEWRITE\n");
+           ideWrite(cpu);
+           sret(cpu);
+           return;
+           break;
+      case 0xff3c:                                                           // f_ideread
+           if (showTrace) trace("CALL  F_IDEREAD\n");
+           ideRead(cpu);
            sret(cpu);
            return;
            break;
@@ -1104,6 +1218,11 @@ void cpuCycle(CPU *cpu) {
            else cpu->df = 1;
            sret(cpu);
            return;
+           break;
+      case 0xff81:                                                          // f_getdev
+           cpu->r[0xf] = 0x0005;
+           sret(cpu);
+           return; 
            break;
       }
     if (cpu->r[cpu->p] >= 0xf000) {
