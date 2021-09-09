@@ -772,6 +772,53 @@ void dbgCmdB(CPU* cpu, char* buffer) {
     }
   }
 
+void dbgCmdC(CPU* cpu, char* buffer) {
+  int i;
+  int n;
+  char tbuffer[256];
+  if (*buffer == '?') {
+    if (useVisual) output("");
+      else printf("\n");
+    if (useVisual) output("Conditions:");
+      else printf("Conditions:\n");
+    for (i=0; i<numConditions; i++) {
+      sprintf(tbuffer,"  %d: %s",i,conditions[i]);
+      if (useVisual) output(tbuffer);
+        else printf("%s\n",tbuffer);
+      }
+    return;
+    }
+  if (*buffer == '+') {
+    buffer++;
+    if (*buffer == '+') {
+      useConditions = 0xff;
+      return;
+      }
+    numConditions++;
+    if (numConditions == 1)
+      conditions = (char**)malloc(sizeof(char*));
+    else
+      conditions = (char**)realloc(conditions, sizeof(char*) * numConditions);
+    conditions[numConditions-1] = (char*)malloc(strlen(buffer)+1);
+    strcpy(conditions[numConditions-1], buffer);
+    return;
+    }
+  if (*buffer == '-') {
+    buffer++;
+    if (*buffer == '-') {
+      useConditions = 0;
+      return;
+      }
+    n = atoi(buffer);
+    if (n <0 || n>= numConditions) return;
+    free(conditions[n]);
+    for (i=n; i<numConditions-1; i++)
+      conditions[i] = conditions[i+1];
+    numConditions--;
+    if (numConditions == 0) free(conditions);
+    }
+  }
+
 void dbgCmdD(CPU* cpu, char* buffer) {
   word a;
   char line[80];
@@ -958,6 +1005,149 @@ void dbgCmdX(CPU* cpu, char* buffer) {
     }
   }
 
+#define OP_MUL  0x60
+#define OP_DIV  0x61
+#define OP_MOD  0x62
+#define OP_ADD  0x50
+#define OP_SUB  0x51
+#define OP_AND  0x40
+#define OP_OR   0x41
+#define OP_XOR  0x42
+#define OP_EQ   0x30
+#define OP_NE   0x31
+#define OP_LT   0x32
+#define OP_GT   0x33
+#define OP_LTE  0x34
+#define OP_GTE  0x35
+#define OP_LAND 0x20
+#define OP_LOR  0x21
+#define OP_OP   0x10
+#define OP_END  0x01
+#define OP_NUM  0x00
+
+int evaluateCondition(CPU* cpu, int num) {
+  word numbers[256];
+  char ops[256];
+  char *pos;
+  int  nstack;
+  int  ostack;
+  byte op;
+  nstack = 0;
+  ostack = 0;
+  pos = conditions[num];
+  while (*pos != 0) {
+    if ((*pos == 'd' || *pos == 'D') &&
+        (*(pos+1) != 'f' && *(pos+1) != 'F')) numbers[nstack++] = cpu->d;
+    else if ((*pos == 'd' || *pos == 'D') &&
+             (*(pos+1) == 'f' || *(pos+1) == 'F')) numbers[nstack++] = cpu->df;
+    else if (*pos == 'x' || *pos == 'X') numbers[nstack++] = cpu->x;
+    else if (*pos == 'p' || *pos == 'P') numbers[nstack++] = cpu->p;
+    else if (*pos == 'q' || *pos == 'Q') numbers[nstack++] = cpu->q;
+    else if (*pos == 't' || *pos == 'T') numbers[nstack++] = cpu->t;
+    else if ((*pos == 'i' || *pos == 'I') &&
+             (*(pos+1) == 'e' || *(pos+1) == 'E')) numbers[nstack++] = cpu->ie;
+    else if (*pos == 'r' || *pos == 'R') {
+      pos++;
+      if (*pos >= '0' && *pos <= '9') numbers[nstack++] = cpu->r[*pos - '0'];
+      if (*pos >= 'a' && *pos <= 'f') numbers[nstack++] = cpu->r[*pos - 87];
+      if (*pos >= 'A' && *pos <= 'F') numbers[nstack++] = cpu->r[*pos - 55];
+      }
+    else if (*pos >= '0' && *pos <= '9') {
+      numbers[nstack] = 0;
+      while ((*pos >= '0' && *pos <= '9') ||
+             (*pos >= 'a' && *pos <= 'f') ||
+             (*pos >= 'A' && *pos <= 'F')) {
+        numbers[nstack] <<= 4;
+        if (*pos >= '0' && *pos <= '9') numbers[nstack] |= (*pos - '0');
+        if (*pos >= 'a' && *pos <= 'f') numbers[nstack] |= (*pos - 87);
+        if (*pos >= 'A' && *pos <= 'F') numbers[nstack] |= (*pos - 55);
+        pos++;
+        }
+      nstack++;
+      pos--;
+      }
+    else return 0;
+    if (*pos != 0) pos++;
+    while (*pos == ' ') pos++;
+    op = 0;
+    switch (*pos) {
+      case 0  : op = OP_END; break;
+      case '*': op = OP_MUL; break;
+      case '/': op = OP_DIV; break;
+      case '%': op = OP_MOD; break;
+      case '+': op = OP_ADD; break;
+      case '-': op = OP_SUB; break;
+      case '^': op = OP_XOR; break;
+      case '&':
+           if (*(pos+1) == '&') {
+             op = OP_LAND;
+             pos++;
+             }
+           else op = OP_AND;
+           break;
+      case '|':
+           if (*(pos+1) == '|') {
+             op = OP_LOR;
+             pos++;
+             }
+           else op = OP_OR;
+           break;
+      case '=':
+           if (*(pos+1) == '=') {
+             op = OP_EQ;
+             pos++;
+             }
+           else op = OP_EQ;
+           break;
+      case '<':
+           if (*(pos+1) == '=') {
+             op = OP_LTE;
+             pos++;
+             }
+           else op = OP_LT;
+           break;
+      case '>':
+           if (*(pos+1) == '=') {
+             op = OP_GTE;
+             pos++;
+             }
+           else op = OP_GT;
+           break;
+      }
+    if (op == 0) return 0;
+    while (ostack > 0 && (ops[ostack-1] & 0xf0) >= (op & 0xf0)) {
+      nstack--;
+      ostack--;
+      switch (ops[ostack]) {
+        case OP_MUL : numbers[nstack-1] *= numbers[nstack]; break;
+        case OP_DIV : numbers[nstack-1] /= numbers[nstack]; break;
+        case OP_MOD : numbers[nstack-1] %= numbers[nstack]; break;
+        case OP_ADD : numbers[nstack-1] += numbers[nstack]; break;
+        case OP_SUB : numbers[nstack-1] -= numbers[nstack]; break;
+        case OP_AND : numbers[nstack-1] &= numbers[nstack]; break;
+        case OP_OR  : numbers[nstack-1] |= numbers[nstack]; break;
+        case OP_LAND: numbers[nstack-1] &= numbers[nstack]; break;
+        case OP_LOR : numbers[nstack-1] |= numbers[nstack]; break;
+        case OP_XOR : numbers[nstack-1] ^= numbers[nstack]; break;
+        case OP_EQ  : numbers[nstack-1] = (numbers[nstack-1] == numbers[nstack]); break;
+        case OP_LT  : numbers[nstack-1] = (numbers[nstack-1] <  numbers[nstack]); break;
+        case OP_GT  : numbers[nstack-1] = (numbers[nstack-1] >  numbers[nstack]); break;
+        case OP_LTE : numbers[nstack-1] = (numbers[nstack-1] <= numbers[nstack]); break;
+        case OP_GTE : numbers[nstack-1] = (numbers[nstack-1] >= numbers[nstack]); break;
+        }
+      }
+    if (op != OP_END) {
+      ops[ostack++] = op;
+      pos++;
+      while (*pos == ' ') pos++;
+      }
+    }
+  if (nstack == 0) return 0;
+  if (nstack != 1) return 0;
+  if (numbers[0] != 0) return -1;
+  return 0;
+  }
+
 void dbgRun(CPU* cpu, char* buffer) {
   int i;
   word a;
@@ -978,6 +1168,10 @@ void dbgRun(CPU* cpu, char* buffer) {
     for (i=0; i<numBreakpoints; i++)
       if (breakpoints[i] == cpu->r[cpu->p]) runFlag = 0;
     if (traps[cpu->ram[cpu->r[cpu->p]]] != 0) runFlag = 0;
+    if (useConditions) {
+      for (i=0; i<numConditions; i++)
+        if (evaluateCondition(cpu, i)) runFlag = 0;
+      }
     }
   }
 
@@ -1009,17 +1203,22 @@ void help() {
     output("B?             - show break points");
     output("B+addr         - add break point");
     output("B-addr         - remove break point");
+    output("C+expr         - add break point condition");
+    output("C-num          - remove break point condition");
+    output("C?             - show break point conditions");
+    output("C++            - enable break point conditions");
+    output("C--            - disable break point conditions");
     output("D              - show value in D");
     output("D=b            - Set D to b");
     output("DF             - show value in DF");
     output("DF=b           - set value in DF");
+    printf("\e[23;1H--MORE--");
+    fgets(buffer,255,stdin);
     output("DI bb          - perform DMA In using bb as input");
     output("DO             - perform DMA Out");
     output("I              - trigger interrupt action");
     output("IE             - show state of IE");
     output("IE=b           - set IE");
-    printf("\e[23;1H--MORE--");
-    fgets(buffer,255,stdin);
     output("P              - show value of P");
     output("P=n            - set P to n");
     output("Q              - show value of Q");
@@ -1031,13 +1230,13 @@ void help() {
     output("T=n            - set T to n");
     output("T?             - show instruction traps");
     output("T+bb           - add instruction trap");
+    printf("\e[23;1H--MORE--");
+    fgets(buffer,255,stdin);
     output("T-bb           - remove instruction trap");
     output("TR+            - turn on tracing");
     output("TR-            - turn off tracing");
     output("U+             - turn on live update");
     output("U-             - turn off live update");
-    printf("\e[23;1H--MORE--");
-    fgets(buffer,255,stdin);
     output("X              - show value of X");
     output("X=n            - set X to n");
     output("/              - exit");
@@ -1066,6 +1265,11 @@ void help() {
     printf("B?             - show break points\n");
     printf("B+addr         - add break point\n");
     printf("B-addr         - remove break point\n");
+    printf("C+expr         - add break point condition\n");
+    printf("C-num          - remove break point condition\n");
+    printf("C?             - show break point conditions\n");
+    printf("C++            - enable break point conditions\n");
+    printf("C--            - disable break point conditions\n");
     printf("D              - show value in D\n");
     printf("D=b            - Set D to b\n");
     printf("DF             - show value in DF\n");
@@ -1124,6 +1328,7 @@ void debugger(CPU* cpu) {
     if (buffer[0] == '-') dbgPop(cpu, buffer+1);
     if (buffer[0] == 'h' || buffer[0] == 'H') help();
     if (buffer[0] == 'b' || buffer[0] == 'B') dbgCmdB(cpu, buffer+1);
+    if (buffer[0] == 'c' || buffer[0] == 'C') dbgCmdC(cpu, buffer+1);
     if (buffer[0] == 'd' || buffer[0] == 'D') dbgCmdD(cpu, buffer+1);
     if (buffer[0] == 'p' || buffer[0] == 'P') dbgCmdP(cpu, buffer+1);
     if (buffer[0] == 'r' || buffer[0] == 'R') dbgCmdR(cpu, buffer+1);

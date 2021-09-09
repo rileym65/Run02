@@ -55,14 +55,11 @@ int main(int argc, char** argv) {
   int  args;
   char buffer[256];
   struct termios terminal;
-  if (argc < 2) {
-    printf("Usage: run02 filename\n");
-    exit(1);
-    }
   for (i=0; i<256; i++) imap[i] = 0;
   use1805 = 0;
   useElfos = 0;
   useBios = 0xff;
+  useConditions = 0xff;
   useVisual = 0;
   liveUpdate = 0;
   runDebugger = 0;
@@ -73,6 +70,7 @@ int main(int argc, char** argv) {
   showTrace = 0;
   showMap = 0;
   args = -1;
+  numConditions = 0;
   ramStart = 0x0000;
   ramEnd = 0xefff;
   for (i=0; i<256; i++) mmap[i] = 'A';

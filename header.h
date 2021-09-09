@@ -65,6 +65,9 @@ LINK char mmap[256];
 LINK double freq;
 LINK struct termios original;
 LINK byte liveUpdate;
+LINK char **conditions;
+LINK int    numConditions;
+LINK byte useConditions;
 
 extern void cpuCycle(CPU *cpu);
 extern void cpuDmaIn(CPU* cpu, byte v);
