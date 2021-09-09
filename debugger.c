@@ -1104,6 +1104,10 @@ int evaluateCondition(CPU* cpu, int num) {
              op = OP_LTE;
              pos++;
              }
+           else if (*(pos+1) == '>') {
+             op = OP_NE;
+             pos++;
+             }
            else op = OP_LT;
            break;
       case '>':
@@ -1130,6 +1134,7 @@ int evaluateCondition(CPU* cpu, int num) {
         case OP_LOR : numbers[nstack-1] |= numbers[nstack]; break;
         case OP_XOR : numbers[nstack-1] ^= numbers[nstack]; break;
         case OP_EQ  : numbers[nstack-1] = (numbers[nstack-1] == numbers[nstack]); break;
+        case OP_NE  : numbers[nstack-1] = (numbers[nstack-1] != numbers[nstack]); break;
         case OP_LT  : numbers[nstack-1] = (numbers[nstack-1] <  numbers[nstack]); break;
         case OP_GT  : numbers[nstack-1] = (numbers[nstack-1] >  numbers[nstack]); break;
         case OP_LTE : numbers[nstack-1] = (numbers[nstack-1] <= numbers[nstack]); break;
