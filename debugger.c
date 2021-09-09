@@ -57,6 +57,8 @@ void updateScreen(CPU* cpu) {
     cpu->d, cpu->df, cpu->x, cpu->p, cpu->t, cpu->q, cpu->ie);
   printf("\e[3;12H");
   printf(" +------+ +------+ +-----+ +-----+ +------+ +-----+ +------+\n");
+  printf("\e[1;75H");
+  if (useConditions) printf("CND"); else printf("   ");
   printf("\e[23;1H");
   printf("%79s"," ");
   printf("\e[22;1H");
