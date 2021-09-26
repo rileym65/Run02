@@ -204,7 +204,7 @@ int main(int argc, char** argv) {
   st = startTime.tv_sec * 1000000 + startTime.tv_usec;
   et = endTime.tv_sec * 1000000 + endTime.tv_usec;
   printf("\n");
-  printf("Instructions executed: %ld\n",icount);
+  printf("Instructions executed: %lld\n",icount);
   printf("Run time             : %f\n",(et-st)/1000000.0);
   printf("Instructions/second  : %f\n",icount/((et-st)/1000000.0));
 
@@ -218,5 +218,6 @@ int main(int argc, char** argv) {
       if ((i+1)%16 == 0) printf("\n%X   ",(i+1)/16);
       }
     }
+  return 0;
   }
 

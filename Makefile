@@ -1,6 +1,6 @@
 PROJECT = run02
 CC = gcc
-DEFS =
+DEFS = -Wall
 INCS =
 INCDIR =
 LIBS =
