@@ -548,7 +548,7 @@ void ideRead(CPU* cpu) {
     printf("Attempt to read non-existant disk, aborting.\n");
     exit(1);
     }
-  pos = cpu->r[8] & 0x0000ffff;
+  pos = cpu->r[8] & 0x000000ff;
   pos = (pos << 16) | cpu->r[7];
   pos <<= 9;
   lseek(disk, pos, SEEK_SET);
@@ -569,7 +569,7 @@ void ideWrite(CPU* cpu) {
     printf("Attempt to write non-existant disk, aborting.\n");
     exit(1);
     }
-  pos = cpu->r[8] & 0x0000ffff;
+  pos = cpu->r[8] & 0x000000ff;
   pos = (pos << 16) | cpu->r[7];
   pos <<= 9;
   lseek(disk, pos, SEEK_SET);
