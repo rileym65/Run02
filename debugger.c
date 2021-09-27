@@ -551,7 +551,7 @@ char* hexToBin(char* buffer, word *ret) {
   }
 
 void dbgShowCpu(CPU* cpu) {
-  int x,y;
+  int x;
   char buffer[80];
   if (useVisual) {
     output("");
@@ -1311,7 +1311,7 @@ void help() {
 void debugger(CPU* cpu) {
   int i;
   byte flag;
-  byte buffer[1024];
+  char buffer[1024];
   d_address = 0;
   flag = 0xff;
   numBreakpoints = 0;

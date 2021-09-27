@@ -65,7 +65,7 @@ void sret(CPU *cpu) {
   cpu->r[5] = 0xfa8d;
   }
 
-byte bcdAdd(CPU* cpu,byte a, byte b, byte c) {
+void bcdAdd(CPU* cpu,byte a, byte b, byte c) {
   cpu->d = a+b+c;
   cpu->df = 0;
   if ((cpu->d & 0x0f) >= 0x0a || ((cpu->d & 0x0f) < (a & 0x0f))) cpu->d += 0x06;
@@ -86,7 +86,6 @@ void bcdSub(CPU* cpu,byte a, byte b, byte c) {
 void cpu1805(CPU *cpu) {
   byte i;
   word d;
-  word a;
   i = cpu->ram[cpu->r[cpu->p]++];
   cpu->n = i & 0xf;
   cpu->i = (i >> 4) & 0xff;
@@ -353,7 +352,7 @@ void cpu1805(CPU *cpu) {
          break;
     case 0x0a:                                                             // RSXD
          cpu->ram[cpu->r[cpu->x]--] = (cpu->r[cpu->n] >> 8);
-         cpu->ram[cpu->r[cpu->x]--] - (cpu->r[cpu->n] & 0xff);
+         cpu->ram[cpu->r[cpu->x]--] = (cpu->r[cpu->n] & 0xff);
          cycles += 2;
          if (showTrace) {
            sprintf(tbuffer,"RSXD  R%X             M[X]=%04x\n",cpu->n,cpu->r[cpu->n]);
@@ -584,7 +583,6 @@ void ideWrite(CPU* cpu) {
 
 void cpuCycle(CPU *cpu) {
   byte i;
-  word d;
   byte key;
   int  f;
   int  flags;
@@ -598,7 +596,7 @@ void cpuCycle(CPU *cpu) {
   long long et;
   word w;
   if (showTrace) {
-    sprintf(tbuffer,"R%x:[%04x] ",cpu->p,cpu->r[cpu->p],cpu->ram[cpu->r[cpu->p]]);
+    sprintf(tbuffer,"R%x:[%04x] ",cpu->p,cpu->r[cpu->p]);
     buffer2[1] = 0;
     }
   if (useElfos) {

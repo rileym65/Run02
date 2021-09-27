@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 
 typedef u_int64_t qword;
 typedef u_int32_t dword;
@@ -78,6 +79,7 @@ extern void cpuReset(CPU *cpu);
 extern void debugger(CPU* cpu);
 extern int loader(char* filename);
 extern void trace(char* message);
+extern void output(char* line);
 
 #endif
 
