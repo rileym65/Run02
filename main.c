@@ -2,6 +2,20 @@
 
 #include "header.h"
 
+word getHex(char* line) {
+  word ret;
+  ret = 0;
+  while ((*line >= '0' && *line <= '9') ||
+         (*line >= 'a' && *line <= 'f') ||
+         (*line >= 'A' && *line <= 'F')) {
+    if (*line >= '0' && *line <= '9') ret = (ret << 4) | (*line - '0');
+    if (*line >= 'a' && *line <= 'f') ret = (ret << 4) | (*line - 87);
+    if (*line >= 'A' && *line <= 'F') ret = (ret << 4) | (*line - 55);
+    line++;
+    }
+  return ret;
+  }
+
 void processMem(char* line, char typ) {
   word i;
   word start;
@@ -49,6 +63,7 @@ int main(int argc, char** argv) {
   word addr;
   word size;
   word exec;
+  word execAddr;
   struct timeval startTime;
   struct timeval endTime;
   long long st,et;
@@ -65,6 +80,7 @@ int main(int argc, char** argv) {
   runDebugger = 0;
   elfos4 = 0;
   exec = 0xffff;
+  execAddr = 0x0000;
   icount = 0;
   freq = 0;
   showTrace = 0;
@@ -91,6 +107,7 @@ int main(int argc, char** argv) {
     else if (strncmp(argv[i],"-ram=",5) == 0) processMem(argv[i]+5,'A');
     else if (strncmp(argv[i],"-rom=",5) == 0) processMem(argv[i]+5,'O');
     else if (strncmp(argv[i],"-none=",6) == 0) processMem(argv[i]+6,'X');
+    else if (strncmp(argv[i],"-exec=",6) == 0) execAddr = getHex(argv[i]+6);
     else if (strcmp(argv[i],"-c") == 0) {
       i++;
       freq = atof(argv[i]);
@@ -184,6 +201,7 @@ int main(int argc, char** argv) {
       }
     cpu.r[0xa] = 0x80;
     }
+  else cpu.r[0] = execAddr;
   gettimeofday(&startTime, NULL);
   if (runDebugger) {
     debugger(&cpu);

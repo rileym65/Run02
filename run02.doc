@@ -10,6 +10,7 @@ Command line switches:
   -nb             - Do not use simulated BIOS
   -u              - Turn on live update in visual debugger
   -v              - Run debugger in visual mode
+  -exec=addr      - start execution at specified address
   -ram=nnnn-mmmm  - Mark region from nnnn to mmmm as RAM
   -rom=nnnn-mmmm  - Mark region from nnnn to mmmm as ROM
   -none=nnnn-mmmm - Mark region from nnnn to mmmm as None
