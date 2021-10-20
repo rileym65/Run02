@@ -732,7 +732,7 @@ void cpuCycle(CPU *cpu) {
            buffer[i] = 0;
            i = 0;
            while (cpu->ram[cpu->r[0xc]] != 0)
-             name2[i++] = cpu->ram[cpu->r[0xf]++];
+             name2[i++] = cpu->ram[cpu->r[0xc]++];
            name2[i] = 0;
            i = rename(buffer,name2);
            cpu->df = (i == 0) ? 0 : 1;
