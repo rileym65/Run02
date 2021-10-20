@@ -581,6 +581,30 @@ void ideWrite(CPU* cpu) {
   close(disk);
   }
 
+void checkEOF(CPU *cpu) {
+  int p;
+  int s;
+  int c;
+  int f;
+  p = (cpu->ram[cpu->r[0xd]+0] << 24) |
+      (cpu->ram[cpu->r[0xd]+1] << 16) |
+      (cpu->ram[cpu->r[0xd]+2] << 8 ) |
+       cpu->ram[cpu->r[0xd]+3];
+  f = cpu->ram[cpu->r[0xd]+9] << 24;
+  f |= cpu->ram[cpu->r[0xd]+10] << 16;
+  f |= cpu->ram[cpu->r[0xd]+11] << 8;
+  f |= cpu->ram[cpu->r[0xd]+12];
+  c = lseek(f, 0, SEEK_CUR);
+  s = lseek(f, 0, SEEK_END);
+      lseek(f, c, SEEK_SET);
+  p &= 0xfffff000;
+  s &= 0xfffff000;
+  if (p == s)
+    cpu->ram[cpu->r[0xd] + 8] |= 4;
+  else
+    cpu->ram[cpu->r[0xd] + 8] &= 0xfb;
+  }
+
 void cpuCycle(CPU *cpu) {
   byte i;
   byte key;
@@ -641,6 +665,7 @@ void cpuCycle(CPU *cpu) {
              cpu->ram[cpu->r[0xd]+2]  = 0;
              cpu->ram[cpu->r[0xd]+3]  = 0;
              }
+           checkEOF(cpu);
            cpu->df = 0;
            sret(cpu);
            return;
@@ -663,6 +688,7 @@ void cpuCycle(CPU *cpu) {
            cpu->ram[cpu->r[0xd]+2] = (p & 0x0000ff00) >> 8;
            cpu->ram[cpu->r[0xd]+3] = (p & 0x000000ff);
            cpu->df = 0;
+           checkEOF(cpu);
            sret(cpu);
            return;
            break;
@@ -701,6 +727,7 @@ void cpuCycle(CPU *cpu) {
            cpu->ram[cpu->r[0xd]+2] = (p & 0x0000ff00) >> 8;
            cpu->ram[cpu->r[0xd]+3] = (p & 0x000000ff);
            cpu->df = 0;
+           checkEOF(cpu);
            sret(cpu);
            return;
            break;
@@ -726,6 +753,7 @@ void cpuCycle(CPU *cpu) {
            cpu->r[8] = (p &0xffff0000) >> 16;
            cpu->r[7] = (p & 0x0000ffff);
            cpu->df = 0;
+           checkEOF(cpu);
            sret(cpu);
            return;
            break;
