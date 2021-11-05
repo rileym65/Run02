@@ -57,6 +57,7 @@ int loader(char* filename) {
         }
       pos++;
       }
+    if (valid) cpu.ram[address++] = value;
     }
   return 0;
   }
