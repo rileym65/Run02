@@ -39,6 +39,11 @@ Debugger commands:
   B?             - show break points
   B+addr         - add break point
   B-addr         - remove break point
+  C+expr         - add breakpoint condition
+  C-num          - remove breakpoint condition
+  C?             - show breakpoint conditions
+  C++            - enable breakpoint conditions
+  C--            - disable breakpoint conditions
   D              - show value in D
   D=b            - Set D to b
   DF             - show value in DF
