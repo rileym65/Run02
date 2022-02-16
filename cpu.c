@@ -743,8 +743,6 @@ void cpuCycle(CPU *cpu) {
            f |= cpu->ram[cpu->r[0xd]+11] << 8;
            f |= cpu->ram[cpu->r[0xd]+12];
            p = (cpu->r[8] << 16) | cpu->r[7];
-printf("p=%d\n",p);
-printf("whence=%d\n",cpu->r[0xc] & 0xff);
            if ((cpu->r[0xc] &0xff) == 0) p = lseek(f, p, SEEK_SET);
            if ((cpu->r[0xc] &0xff) == 1) p = lseek(f, p, SEEK_CUR);
            if ((cpu->r[0xc] &0xff) == 2) p = lseek(f, p, SEEK_END);
