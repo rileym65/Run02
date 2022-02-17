@@ -891,7 +891,7 @@ void cpuCycle(CPU *cpu) {
            if (showTrace) strcat(tbuffer, "CALL  F_READ");
            read(0,&key,1);
            if (key == 127) key = 8;
-           printf("%c",key);
+           if ((cpu->r[0xe] & 0x0100) != 0) printf("%c",key);
            fflush(stdout);
            cpu->d = key;
            sret(cpu);

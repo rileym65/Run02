@@ -188,6 +188,7 @@ int main(int argc, char** argv) {
 
   runFlag = 0xff;
   cpuReset(&cpu);
+  cpu.r[0xe] = 0x0700;
   if (useElfos && exec != 0xffff) {
     cpu.p = 3;
     cpu.x = 2;
