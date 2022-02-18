@@ -823,9 +823,13 @@ void cpuCycle(CPU *cpu) {
            break;
       case 0x036c:                                                         // o_alloc
            doAlloc(cpu);
+           sret(cpu);
+           return;
            break;
       case 0x036f:                                                         // o_dealloc
            doDealloc(cpu);
+           sret(cpu);
+           return;
            break;
       }
 //    if (cpu->r[cpu->p] < 0x2000) {
