@@ -98,6 +98,7 @@ int main(int argc, char** argv) {
     if (strcmp(argv[i],"-elfos") == 0) useElfos = 0xff;
     else if (strcmp(argv[i],"-e") == 0) useElfos = 0xff;
     else if (strcmp(argv[i],"-boot") == 0) execAddr = 0xff00;
+    else if (strcmp(argv[i],"-B") == 0) execAddr = 0xff00;
     else if (strcmp(argv[i],"-d") == 0) runDebugger = 0xff;
     else if (strcmp(argv[i],"-1805") == 0) use1805 = 0xff;
     else if (strcmp(argv[i],"-4") == 0) { useElfos = 0xff; elfos4 = 0xff; }

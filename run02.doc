@@ -2,6 +2,7 @@ Command line switches:
   -1805           - Enable 1804/5/6a instructions
   -4              - Enable Elf/OS 4.1.0 calls, sets -e
   -boot           - Boot from emulated disk
+  -B              - Boot from emulated disk
   -b              - Execute at FF00, allows booting a disk image
   -elfos          - Enable Elf/OS kernel calls
   -e              - Enable Elf/OS kernel calls

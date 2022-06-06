@@ -1068,6 +1068,22 @@ int evaluateCondition(CPU* cpu, int num) {
       nstack++;
       pos--;
       }
+    else if (*pos == '[') {
+      pos++;
+      numbers[nstack] = 0;
+      while ((*pos >= '0' && *pos <= '9') ||
+             (*pos >= 'a' && *pos <= 'f') ||
+             (*pos >= 'A' && *pos <= 'F')) {
+        numbers[nstack] <<= 4;
+        if (*pos >= '0' && *pos <= '9') numbers[nstack] |= (*pos - '0');
+        if (*pos >= 'a' && *pos <= 'f') numbers[nstack] |= (*pos - 87);
+        if (*pos >= 'A' && *pos <= 'F') numbers[nstack] |= (*pos - 55);
+        pos++;
+        }
+      numbers[nstack] = cpu->ram[numbers[nstack]];
+      nstack++;
+      if (*pos != ']') return 0;
+      }
     else return 0;
     if (*pos != 0) pos++;
     while (*pos == ' ') pos++;
