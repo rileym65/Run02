@@ -778,6 +778,11 @@ void dbgCmdC(CPU* cpu, char* buffer) {
   int i;
   int n;
   char tbuffer[256];
+  if (strcasecmp(buffer,"ls") == 0) {
+    if (useVisual) printf("\e[H\e[2J");
+    if (useVisual) showScreen(cpu);
+    return;
+    }
   if (*buffer == '?') {
     if (useVisual) output("");
       else printf("\n");
