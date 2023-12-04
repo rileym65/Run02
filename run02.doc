@@ -47,6 +47,7 @@ Debugger commands:
   C?             - show breakpoint conditions
   C++            - enable breakpoint conditions
   C--            - disable breakpoint conditions
+  CLS            - clear/redraw screen
   D              - show value in D
   D=b            - Set D to b
   DF             - show value in DF
