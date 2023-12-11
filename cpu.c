@@ -854,6 +854,7 @@ void cpuCycle(CPU *cpu) {
              sprintf(tline, "CALL  SCALL %02X%02X",cpu->ram[cpu->r[3]],cpu->ram[cpu->r[3]+1]);
              strcat(tbuffer, tline);
              }
+           cpu->r[14] = (cpu->r[14] & 0xff00) | cpu->d;
            cpu->x = 2;
            cpu->ram[cpu->r[cpu->x]--] = ((cpu->r[6] >> 8) & 0xff);
            cpu->ram[cpu->r[cpu->x]--] = (cpu->r[6] & 0xff);
@@ -868,6 +869,7 @@ void cpuCycle(CPU *cpu) {
       case 0xfff1:
       case 0xfa8d:                                                           // ret
            if (showTrace) strcat(tbuffer, "CALL  SRET");
+           cpu->r[14] = (cpu->r[14] & 0xff00) | cpu->d;
            cpu->x = 2;
            cpu->r[3] = cpu->r[6];
            cpu->r[cpu->x]++;
