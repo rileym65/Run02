@@ -616,6 +616,8 @@ void cpuCycle(CPU *cpu) {
   char buffer2[2];
   char name2[32];
   struct timeval tv;
+  time_t tim;
+  struct tm dt;
   long long st;
   long long et;
   word w;
@@ -839,6 +841,19 @@ void cpuCycle(CPU *cpu) {
     }
   if (useBios) {
     switch (cpu->r[cpu->p]) {
+      case 0xf815:                                                           // f_gettod
+           tim = time(NULL);
+           localtime_r(&tim, &dt);
+           cpu->ram[cpu->r[0xf]++] = dt.tm_mon + 1;
+           cpu->ram[cpu->r[0xf]++] = dt.tm_mday;
+           cpu->ram[cpu->r[0xf]++] = dt.tm_year + 1900 - 1972;
+           cpu->ram[cpu->r[0xf]++] = dt.tm_hour;
+           cpu->ram[cpu->r[0xf]++] = dt.tm_min;
+           cpu->ram[cpu->r[0xf]++] = dt.tm_sec;
+           cpu->df = 0;
+           sret(cpu);
+           return; 
+           break;
       case 0xff3f:                                                           // f_initcall
            if (showTrace) strcat(tbuffer, "CALL  F_INITCALL");
            cpu->r[4] = 0xfa7b;
@@ -854,6 +869,7 @@ void cpuCycle(CPU *cpu) {
              sprintf(tline, "CALL  SCALL %02X%02X",cpu->ram[cpu->r[3]],cpu->ram[cpu->r[3]+1]);
              strcat(tbuffer, tline);
              }
+           cpu->r[14] = (cpu->r[14] & 0xff00) | cpu->d;
            cpu->x = 2;
            cpu->ram[cpu->r[cpu->x]--] = ((cpu->r[6] >> 8) & 0xff);
            cpu->ram[cpu->r[cpu->x]--] = (cpu->r[6] & 0xff);
@@ -868,6 +884,7 @@ void cpuCycle(CPU *cpu) {
       case 0xfff1:
       case 0xfa8d:                                                           // ret
            if (showTrace) strcat(tbuffer, "CALL  SRET");
+           cpu->r[14] = (cpu->r[14] & 0xff00) | cpu->d;
            cpu->x = 2;
            cpu->r[3] = cpu->r[6];
            cpu->r[cpu->x]++;
@@ -1294,7 +1311,7 @@ void cpuCycle(CPU *cpu) {
            break;
       case 0xff81:                                                          // f_getdev
            if (showTrace) strcat(tbuffer, "CALL  F_GETDEV");
-           cpu->r[0xf] = 0x0005;
+           cpu->r[0xf] = 0x0015;
            sret(cpu);
            if (showTrace) trace(tbuffer);
            return; 
