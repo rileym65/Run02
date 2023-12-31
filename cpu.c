@@ -531,6 +531,8 @@ void ideBoot(CPU* cpu) {
   cpu->r[5] = 0xfa8d;
   cpu->r[3] = 0x0106;
   cpu->r[2] = 0x00f0;
+  cpu->r[8] = 0xe000;
+  cpu->r[7] = 0x0000;
   cpu->p = 3;
   cpu->x = 2;
   ram = cpu->ram;
@@ -541,14 +543,18 @@ void ideBoot(CPU* cpu) {
 
 void ideRead(CPU* cpu) {
   int disk;
+  int drive;
   qword pos;
   byte* ram;
-  disk = open("disk1.ide", O_RDONLY);
+  disk = -1;
+  drive = (cpu->r[8] & 0xf000) | 0xe000;
+  if (drive == 0xe000) disk = open("disk1.ide", O_RDONLY);
+  if (drive == 0xf000) disk = open("disk2.ide", O_RDONLY);
   if (disk < 0) {
     printf("Attempt to read non-existant disk, aborting.\n");
     exit(1);
     }
-  pos = cpu->r[8] & 0x000000ff;
+  pos = cpu->r[8] & 0x00000fff;
   pos = (pos << 16) | cpu->r[7];
   pos <<= 9;
   lseek(disk, pos, SEEK_SET);
@@ -564,12 +570,16 @@ void ideWrite(CPU* cpu) {
   int disk;
   qword pos;
   byte* ram;
-  disk = open("disk1.ide", O_WRONLY);
+  int   drive;
+  disk = -1;
+  drive = (cpu->r[8] & 0xf000) | 0xe000;
+  if (drive == 0xe000) disk = open("disk1.ide", O_RDWR);
+  if (drive == 0xf000) disk = open("disk2.ide", O_RDWR);
   if (disk < 0) {
     printf("Attempt to write non-existant disk, aborting.\n");
     exit(1);
     }
-  pos = cpu->r[8] & 0x000000ff;
+  pos = cpu->r[8] & 0x00000fff;
   pos = (pos << 16) | cpu->r[7];
   pos <<= 9;
   lseek(disk, pos, SEEK_SET);
@@ -1315,6 +1325,30 @@ void cpuCycle(CPU *cpu) {
            sret(cpu);
            if (showTrace) trace(tbuffer);
            return; 
+           break;
+      case 0xff87:                                                           // f_sdread
+           if (showTrace) strcat(tbuffer, "CALL  F_SDREAD");
+           cpu->r[8] = (cpu->r[8] & 0x00ff) | 0xe000;
+           if (cpu->d) cpu->r[8] |= 0x1000;
+           ideRead(cpu);
+           sret(cpu);
+           if (showTrace) trace(tbuffer);
+           return;
+           break;
+      case 0xff8a:                                                           // f_sdwrite
+           if (showTrace) strcat(tbuffer, "CALL  F_SDWRITE");
+           if (cpu->d) cpu->r[8] |= 0x1000;
+           ideRead(cpu);
+           ideWrite(cpu);
+           sret(cpu);
+           if (showTrace) trace(tbuffer);
+           return;
+           break;
+      case 0xff8d:                                                           // f_sdreset
+           if (showTrace) strcat(tbuffer, "CALL  F_SDRESET");
+           sret(cpu);
+           if (showTrace) trace(tbuffer);
+           return;
            break;
       }
     if (cpu->r[cpu->p] >= 0xf000) {
