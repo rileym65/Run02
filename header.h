@@ -49,7 +49,8 @@ typedef struct {
 
 LINK CPU  cpu;
 LINK int  cycles;
-LINK long long icount;
+//LINK long long icount;
+LINK int64_t icount;
 LINK byte runFlag;
 LINK byte use1805;
 LINK byte useBios;

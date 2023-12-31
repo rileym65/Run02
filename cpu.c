@@ -62,7 +62,7 @@ void sret(CPU *cpu) {
   cpu->r[6] = (cpu->ram[cpu->r[cpu->x]++]);
   cpu->r[6] |= ((cpu->ram[cpu->r[cpu->x]]) << 8);
   cpu->p = 3;
-  cpu->r[5] = 0xfa8d;
+//  cpu->r[5] = 0xfa8d;
   }
 
 void bcdAdd(CPU* cpu,byte a, byte b, byte c) {
