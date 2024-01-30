@@ -57,20 +57,34 @@ LINK byte use1805;
 LINK byte useBios;
 LINK byte useElfos;
 LINK byte useVisual;
+LINK byte useF800;
+LINK byte useRTC;
+LINK byte useUART;
+LINK byte useNVR;
 LINK byte elfos4;
 LINK byte runDebugger;
 LINK byte showMap;
 LINK byte showTrace;
 LINK word ramStart;
 LINK word ramEnd;
+LINK word romStart;
+LINK word romEnd;
 LINK int  imap[256];
 LINK char mmap[256];
+LINK byte nvr[128];
 LINK double freq;
 LINK struct termios original;
 LINK byte liveUpdate;
 LINK char **conditions;
 LINK int    numConditions;
 LINK byte useConditions;
+LINK word size;
+LINK word exec;
+LINK word execAddr;
+LINK char args[256];
+LINK byte bootdisk;
+
+
 
 extern void cpuCycle(CPU *cpu);
 extern void cpuDmaIn(CPU* cpu, byte v);

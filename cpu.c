@@ -10,12 +10,16 @@ char tline[80];
 #define T_TIMER       5
 
 byte readMem(CPU* cpu, word addr) {
+  if (addr == 0xfff9) return 0x01;
+  if (addr == 0xfffa) return 0x00;
+  if (addr == 0xfffb) return 0x0c;
   if (mmap[(addr & 0xff00) >> 8] != 'X') return cpu->ram[addr];
   return 0xff;
   }
 
 void writeMem(CPU* cpu, word addr, byte value) {
   if (mmap[(addr & 0xff00) >> 8] == 'A') cpu->ram[addr] = value;
+
   }
 
 void cpuReset(CPU *cpu) {
@@ -851,18 +855,135 @@ void cpuCycle(CPU *cpu) {
     }
   if (useBios) {
     switch (cpu->r[cpu->p]) {
+      case 0xf800:                                                          // f_bread
+           if (useF800) {
+             if (showTrace) strcat(tbuffer, "CALL  F_BREAD");
+             read(0,&key,1);
+             if (key == 127) key = 8;
+             if ((cpu->r[0xe] & 0x0100) != 0) printf("%c",key);
+             fflush(stdout);
+             cpu->d = key;
+             sret(cpu);
+             if (showTrace) trace(tbuffer);
+             return;
+             }
+           break;
+      case 0xf803:                                                           // f_btype
+           if (useF800) {
+             if (showTrace) strcat(tbuffer, "CALL  F_BTYPE");
+             if (cpu->d == 0x0c) printf("\e[2J\e[1;1H");
+               else printf("%c",cpu->d);
+             fflush(stdout);
+             sret(cpu);
+             if (showTrace) trace(tbuffer);
+             return;
+             }
+           break;
+      case 0xf809:                                                           // f_utype
+           if (useF800) {
+             if (showTrace) strcat(tbuffer, "CALL  F_UTYPE");
+             if (cpu->d == 0x0c) printf("\e[2J\e[1;1H");
+               else printf("%c",cpu->d);
+             fflush(stdout);
+             sret(cpu);
+             if (showTrace) trace(tbuffer);
+             return;
+             }
+           break;
+      case 0xf80c:                                                          // f_uread
+           if (useF800) {
+             if (showTrace) strcat(tbuffer, "CALL  F_UREAD");
+             read(0,&key,1);
+             if (key == 127) key = 8;
+             if ((cpu->r[0xe] & 0x0100) != 0) printf("%c",key);
+             fflush(stdout);
+             cpu->d = key;
+             sret(cpu);
+             if (showTrace) trace(tbuffer);
+             return;
+             }
+           break;
+      case 0xf812:                                                           // f_usetbd
+           if (useF800) {
+             if (showTrace) strcat(tbuffer, "CALL  F_USETBD");
+             cpu->df = (useUART) ? 0 : 1;
+             sret(cpu);
+             if (showTrace) trace(tbuffer);
+             return;
+             }
+           break;
       case 0xf815:                                                           // f_gettod
-           tim = time(NULL);
-           localtime_r(&tim, &dt);
-           cpu->ram[cpu->r[0xf]++] = dt.tm_mon + 1;
-           cpu->ram[cpu->r[0xf]++] = dt.tm_mday;
-           cpu->ram[cpu->r[0xf]++] = dt.tm_year + 1900 - 1972;
-           cpu->ram[cpu->r[0xf]++] = dt.tm_hour;
-           cpu->ram[cpu->r[0xf]++] = dt.tm_min;
-           cpu->ram[cpu->r[0xf]++] = dt.tm_sec;
-           cpu->df = 0;
-           sret(cpu);
-           return; 
+           if (useF800) {
+             tim = time(NULL);
+             localtime_r(&tim, &dt);
+             cpu->ram[cpu->r[0xf]++] = dt.tm_mon + 1;
+             cpu->ram[cpu->r[0xf]++] = dt.tm_mday;
+             cpu->ram[cpu->r[0xf]++] = dt.tm_year + 1900 - 1972;
+             cpu->ram[cpu->r[0xf]++] = dt.tm_hour;
+             cpu->ram[cpu->r[0xf]++] = dt.tm_min;
+             cpu->ram[cpu->r[0xf]++] = dt.tm_sec;
+             cpu->df = 0;
+             sret(cpu);
+             return; 
+             }
+           break;
+      case 0xf818:                                                           // f_settod
+           if (useF800) {
+             if (showTrace) strcat(tbuffer, "CALL  F_SETTOD");
+             cpu->df = (useRTC) ? 0 : 1;
+             sret(cpu);
+             if (showTrace) trace(tbuffer);
+             return;
+             }
+           break;
+      case 0xf81b:                                                           // f_rdnvr
+           if (useF800) {
+             if (showTrace) strcat(tbuffer, "CALL  F_RDNVR");
+             if (useNVR) {
+               for (i=0; i<(cpu->r[0xc] & 0xff); i++)
+                 cpu->ram[cpu->r[0xd]+i] = nvr[(cpu->r[0xf]+i+0x0e) & 0x7f];
+               cpu->df = 0;
+               }
+             else
+               cpu->df = 1;
+             sret(cpu);
+             if (showTrace) trace(tbuffer);
+             return;
+             }
+           break;
+      case 0xf81e:                                                           // f_wrnvr
+           if (useF800) {
+             if (showTrace) strcat(tbuffer, "CALL  F_WRNVR");
+             if (useNVR) {
+               for (i=0; i<(cpu->r[0xc] & 0xff); i++)
+                 nvr[(cpu->r[0xf]+i+0x0e) & 0x7f] = cpu->ram[cpu->r[0xd]+i];
+               f = open("run02.nvr", O_CREAT | O_TRUNC | O_WRONLY, 0666);
+               if (f > 0) {
+                 write(f, nvr, 128);
+                 close(f);
+                 }
+               cpu->df = 0;
+               }
+             else
+               cpu->df = 1;
+             sret(cpu);
+             if (showTrace) trace(tbuffer);
+             return;
+             }
+           break;
+      case 0xf82d:                                                           // f_rtctest
+           if (useF800) {
+             if (showTrace) strcat(tbuffer, "CALL  F_RTCTEST");
+             cpu->df = (useRTC) ? 1 : 0;
+             if (useNVR) {
+               cpu->d = 114;
+               }
+             else
+               cpu->d = 0;
+             sret(cpu);
+             if (showTrace) trace(tbuffer);
+             return;
+             }
            break;
       case 0xff3f:                                                           // f_initcall
            if (showTrace) strcat(tbuffer, "CALL  F_INITCALL");
@@ -1321,7 +1442,11 @@ void cpuCycle(CPU *cpu) {
            break;
       case 0xff81:                                                          // f_getdev
            if (showTrace) strcat(tbuffer, "CALL  F_GETDEV");
-           cpu->r[0xf] = 0x0015;
+           cpu->r[0xf] = 0x0005;
+           if (useRTC) cpu->r[0xf] |= 0x10;
+           if (useNVR) cpu->r[0xf] |= 0x20;
+           if (useUART) cpu->r[0xf] |= 0x08;
+           if (useF800) cpu->r[0xf] |= 0x40;
            sret(cpu);
            if (showTrace) trace(tbuffer);
            return; 

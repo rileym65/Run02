@@ -1,22 +1,44 @@
 Command line switches:
+  -1802           - Use only 1802 instructions
   -1805           - Enable 1804/5/6a instructions
   -4              - Enable Elf/OS 4.1.0 calls, sets -e
   -boot           - Boot from emulated disk
   -B              - Boot from emulated disk
-  -b              - Execute at FF00, allows booting a disk image
   -elfos          - Enable Elf/OS kernel calls
   -e              - Enable Elf/OS kernel calls
+  -f800           - Enable F800 BIOS calls (enabled by default)
   -d              - Run in debugger
   -t              - Turn on command tracing
-  -a args         - Set arguments for Elf/OS executable
-  -b file         - Load binary file
+  -a=args         - Set arguments for Elf/OS executable
+  -b=file         - Load binary file
   -nb             - Do not use simulated BIOS
+  -nB             - Do not boot from emulated disk
+  -nd             - Do not start in debugger mode
+  -ne             - Disable Elf/OS kernel calls
+  -nf800          - Disable F800 BIOS calls
+  -nnvr           - Disable NVR
+  -noboot         - Do not boot from emulated disk
+  -nrtc           - Disable RTC
+  -nu             - Turn off live update in visual debugger
+  -nuart          - Disable UART
+  -nv             - Do not use visual debugger
+  -nvr            - Enable NVR
+  -rtc            - Enable RTC
   -u              - Turn on live update in visual debugger
+  -uart           - Enable UART
   -v              - Run debugger in visual mode
   -exec=addr      - start execution at specified address
   -ram=nnnn-mmmm  - Mark region from nnnn to mmmm as RAM
   -rom=nnnn-mmmm  - Mark region from nnnn to mmmm as ROM
   -none=nnnn-mmmm - Mark region from nnnn to mmmm as None
+
+run02.rc:
+  If run02.rc exists in the directory where Run/02 is run, it will
+read this file and process options from the file.  The options in
+in the file are the same as for command line switches.  In the run02.rc
+file each option must exist on its own line.  The run02.rc file is
+processed before command line switches, as such command line switches
+can be used to override options set in the run02.rc file
 
 Debugger commands:
   ?              - dump memory

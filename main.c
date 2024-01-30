@@ -17,7 +17,6 @@ word getHex(char* line) {
   }
 
 void processMem(char* line, char typ) {
-  word i;
   word start;
   word end;
   byte which;
@@ -54,21 +53,82 @@ void processMem(char* line, char typ) {
     }
   start >>= 8;
   end >>= 8;
-  for (i=start; i<=end; i++) mmap[i] = typ;
+  if (typ == 'A') {
+    ramStart = start;
+    ramEnd = end;
+    }
+  if (typ == 'O') {
+    romStart = start;
+    romEnd = end;
+    }
+  }
+
+void processArg(char* arg) {
+  int f;
+  word addr;
+  char buffer[256];
+  if (strcmp(arg,"-elfos") == 0) useElfos = 0xff;
+  else if (strcmp(arg,"-e") == 0) useElfos = 0xff;
+  else if (strcmp(arg,"-ne") == 0) useElfos = 0;
+  else if (strcmp(arg,"-boot") == 0) bootdisk = 0xff;
+  else if (strcmp(arg,"-noboot") == 0) bootdisk = 0;
+  else if (strcmp(arg,"-B") == 0) bootdisk = 0xff;
+  else if (strcmp(arg,"-nB") == 0) bootdisk = 0;
+  else if (strcmp(arg,"-d") == 0) runDebugger = 0xff;
+  else if (strcmp(arg,"-nd") == 0) runDebugger = 0;
+  else if (strcmp(arg,"-1802") == 0) use1805 = 0;
+  else if (strcmp(arg,"-1805") == 0) use1805 = 0xff;
+  else if (strcmp(arg,"-4") == 0) { useElfos = 0xff; elfos4 = 0xff; }
+  else if (strcmp(arg,"-t") == 0) showTrace = 0xff;
+  else if (strcmp(arg,"-u") == 0) liveUpdate = 0xff;
+  else if (strcmp(arg,"-nu") == 0) liveUpdate = 0;
+  else if (strcmp(arg,"-v") == 0) { useVisual = 0xff; runDebugger = 0xff; }
+  else if (strcmp(arg,"-nv") == 0) useVisual = 0;
+  else if (strcmp(arg,"-nb") == 0) useBios = 0;
+  else if (strcmp(arg,"-f800") == 0) useF800 = 0xff;
+  else if (strcmp(arg,"-nf800") == 0) useF800 = 0;
+  else if (strcmp(arg,"-rtc") == 0) useRTC = 0xff;
+  else if (strcmp(arg,"-nrtc") == 0) useRTC = 0;
+  else if (strcmp(arg,"-uart") == 0) useUART = 0xff;
+  else if (strcmp(arg,"-nuart") == 0) useUART = 0;
+  else if (strcmp(arg,"-nvr") == 0) useNVR = 0xff;
+  else if (strcmp(arg,"-nnvr") == 0) useNVR = 0;
+  else if (strncmp(arg,"-ram=",5) == 0) processMem(arg+5,'A');
+  else if (strncmp(arg,"-rom=",5) == 0) processMem(arg+5,'O');
+  else if (strncmp(arg,"-none=",6) == 0) processMem(arg+6,'X');
+  else if (strncmp(arg,"-exec=",6) == 0) execAddr = getHex(arg+6);
+  else if (strncmp(arg,"-c=",3) == 0) {
+    freq = atof(arg+3);
+    freq = 1/(freq/8);
+    }
+  else if (strncmp(arg,"-a=",3) == 0) {
+    strcpy(args, arg+3);
+    printf("Args: %s\n",args);
+    }
+  else if (strncmp(arg,"-b=",3) == 0) {
+    f = open(arg+3, O_RDONLY);
+    if (f <= 0) {
+      printf("Could not open binary file: %s\n",arg);
+      exit(1);
+      }
+    read(f, buffer, 6);
+    addr = (buffer[0] << 8) | buffer[1];
+    size = (buffer[2] << 8) | buffer[3];
+    exec = (buffer[4] << 8) | buffer[5];
+    read(f, &(cpu.ram[addr]), size);
+    close(f);
+    }
+  else loader(arg);
   }
 
 int main(int argc, char** argv) {
   int i;
+  FILE* file;
   int f;
-  word addr;
-  word size;
-  word exec;
-  word execAddr;
+  char buffer[256];
   struct timeval startTime;
   struct timeval endTime;
   long long st,et;
-  int  args;
-  char buffer[256];
   struct termios terminal;
   for (i=0; i<256; i++) imap[i] = 0;
   use1805 = 0;
@@ -76,6 +136,10 @@ int main(int argc, char** argv) {
   useBios = 0xff;
   useConditions = 0xff;
   useVisual = 0;
+  useF800 = 0xff;
+  useRTC = 0;
+  useUART = 0;
+  useNVR = 0;
   liveUpdate = 0;
   runDebugger = 0;
   elfos4 = 0;
@@ -83,60 +147,43 @@ int main(int argc, char** argv) {
   execAddr = 0x0000;
   icount = 0;
   freq = 0;
+  bootdisk = 0;
   showTrace = 0;
   showMap = 0;
-  args = -1;
+  strcpy(args,"");
   numConditions = 0;
   ramStart = 0x0000;
-  ramEnd = 0xefff;
-  for (i=0; i<256; i++) mmap[i] = 'A';
-  if (useBios) {
-    for (i=0xf8; i<=0xff; i++) mmap[i] = 'O';
+  ramEnd = 0xf7ff;
+  romStart = 0xffff;
+  romEnd = 0xffff;
+
+  file = fopen("run02.rc","r");
+  if (file != NULL) {
+    while (fgets(buffer,255,file) != NULL) {
+      while (strlen(buffer) > 0 && buffer[strlen(buffer)-1] <= ' ')
+        buffer[strlen(buffer)-1] = 0;
+      if (strlen(buffer) > 0) processArg(buffer);
+      }
+    fclose(file);
     }
+
   i = 1;
   while (i < argc) {
-    if (strcmp(argv[i],"-elfos") == 0) useElfos = 0xff;
-    else if (strcmp(argv[i],"-e") == 0) useElfos = 0xff;
-    else if (strcmp(argv[i],"-boot") == 0) execAddr = 0xff00;
-    else if (strcmp(argv[i],"-B") == 0) execAddr = 0xff00;
-    else if (strcmp(argv[i],"-d") == 0) runDebugger = 0xff;
-    else if (strcmp(argv[i],"-1805") == 0) use1805 = 0xff;
-    else if (strcmp(argv[i],"-4") == 0) { useElfos = 0xff; elfos4 = 0xff; }
-    else if (strcmp(argv[i],"-t") == 0) showTrace = 0xff;
-    else if (strcmp(argv[i],"-u") == 0) liveUpdate = 0xff;
-    else if (strcmp(argv[i],"-v") == 0) { useVisual = 0xff; runDebugger = 0xff; }
-    else if (strcmp(argv[i],"-nb") == 0) useBios = 0;
-    else if (strncmp(argv[i],"-ram=",5) == 0) processMem(argv[i]+5,'A');
-    else if (strncmp(argv[i],"-rom=",5) == 0) processMem(argv[i]+5,'O');
-    else if (strncmp(argv[i],"-none=",6) == 0) processMem(argv[i]+6,'X');
-    else if (strncmp(argv[i],"-exec=",6) == 0) execAddr = getHex(argv[i]+6);
-    else if (strcmp(argv[i],"-c") == 0) {
-      i++;
-      freq = atof(argv[i]);
-      freq = 1/(freq/8);
-      }
-    else if (strcmp(argv[i],"-a") == 0) {
-      i++;
-      args = i;
-      printf("Args: %s\n",argv[i]);
-      }
-    else if (strcmp(argv[i],"-b") == 0) {
-      i++;
-      f = open(argv[i], O_RDONLY);
-      if (f <= 0) {
-        printf("Could not open binary file: %s\n",argv[i]);
-        exit(1);
-        }
-      read(f, buffer, 6);
-      addr = (buffer[0] << 8) | buffer[1];
-      size = (buffer[2] << 8) | buffer[3];
-      exec = (buffer[4] << 8) | buffer[5];
-      read(f, &(cpu.ram[addr]), size);
-      close(f);
-      }
-    else loader(argv[i]);
+    processArg(argv[i]);
     i++;
     }
+  
+  for (i=0; i<256; i++) mmap[i] = 'X';
+  if (useBios) {
+    romStart = 0xf800;
+    romEnd = 0xffff;
+    }
+  if (romStart != 0xffff) {
+    for (i=romStart>>8; i<=romEnd>>8; i++) mmap[i] = 'O';
+    }
+  for (i=ramStart>>8; i<=ramEnd>>8; i++) mmap[i] = 'A';
+
+  if (bootdisk != 0) execAddr = 0xff00;
 
   if (useElfos) {
     cpu.ram[0x442] = (ramEnd & 0xff00) >> 8;
@@ -167,11 +214,22 @@ int main(int argc, char** argv) {
       cpu.ram[ramEnd - 253] = 0xfc;
       cpu.ram[ramEnd] = 0;
       }
-    if (args >= 0) {
-      for (i=0; i<strlen(argv[args]); i++) {
-        cpu.ram[0x80+i] = argv[args][i];
+    if (strlen(args) > 0) {
+      for (i=0; i<strlen(args); i++) {
+        cpu.ram[0x80+i] = args[i];
         cpu.ram[0x81+i] = 0;
         }
+      }
+    }
+
+  if (useNVR) {
+    f = open("run02.nvr", O_RDONLY);
+    if (f > 0) {
+      read(f, nvr, 128);
+      close(f);
+      }
+    else {
+      for (i=0; i<128; i++) nvr[i] = 0x00;
       }
     }
 
