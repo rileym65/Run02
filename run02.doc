@@ -4,10 +4,12 @@ Command line switches:
   -4              - Enable Elf/OS 4.1.0 calls, sets -e
   -boot           - Boot from emulated disk
   -B              - Boot from emulated disk
+  -d              - Run in debugger
   -elfos          - Enable Elf/OS kernel calls
   -e              - Enable Elf/OS kernel calls
   -f800           - Enable F800 BIOS calls (enabled by default)
-  -d              - Run in debugger
+  -iport=file     - Attach 1802 port to specified file for input
+  -ioport=file    - Attach 1802 port to specified file for input/output
   -t              - Turn on command tracing
   -a=args         - Set arguments for Elf/OS executable
   -b=file         - Load binary file
@@ -23,6 +25,7 @@ Command line switches:
   -nuart          - Disable UART
   -nv             - Do not use visual debugger
   -nvr            - Enable NVR
+  -oport=file     - Attach 1802 port to specified file for output
   -rtc            - Enable RTC
   -u              - Turn on live update in visual debugger
   -uart           - Enable UART

@@ -83,6 +83,8 @@ LINK word exec;
 LINK word execAddr;
 LINK char args[256];
 LINK byte bootdisk;
+LINK int inp[8];
+LINK int out[8];
 
 
 

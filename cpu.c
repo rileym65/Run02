@@ -1730,7 +1730,7 @@ void cpuCycle(CPU *cpu) {
            case 0x06:
            case 0x07:
                 i = readMem(cpu, cpu->r[cpu->x]++);
-                write((cpu->n & 0xf)-1, &i, 1);
+                write(out[(cpu->n & 0xf)-1], &i, 1);
                 break;
            case 0x08:                                                      // 1805 inst
                 if (use1805) cpu1805(cpu);
@@ -1742,7 +1742,7 @@ void cpuCycle(CPU *cpu) {
            case 0x0d:
            case 0x0e:
            case 0x0f:
-                read((cpu->n & 0xf)-9, &i, 1);
+                read(inp[(cpu->n & 0xf)-9], &i, 1);
                 writeMem(cpu, cpu->r[cpu->x], i);
                 cpu->d = i;
                 break;

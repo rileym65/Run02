@@ -63,6 +63,64 @@ void processMem(char* line, char typ) {
     }
   }
 
+void processOut(char* arg) {
+  byte port;
+  int  file;
+  if (*arg < '1' || *arg > '7') return;
+  port = *arg - '1';
+  arg++;
+  if (*arg != '=') return;
+  arg++;
+  if (strcmp(arg, "stdin") == 0 ) file = 0;
+  else if (strcmp(arg, "stdout") == 0) file = 1;
+  else if (strcmp(arg, "stderr") == 0) file = 2;
+  else file = open(arg, O_CREAT | O_TRUNC | O_WRONLY, 0666);
+  if (file < 0) {
+    printf("Could not open file: %s\n",arg);
+    return;
+    }
+  out[port] = file;
+  }
+
+void processInp(char* arg) {
+  byte port;
+  int  file;
+  if (*arg < '1' || *arg > '7') return;
+  port = *arg - '1';
+  arg++;
+  if (*arg != '=') return;
+  arg++;
+  if (strcmp(arg, "stdin") == 0 ) file = 0;
+  else if (strcmp(arg, "stdout") == 0) file = 1;
+  else if (strcmp(arg, "stderr") == 0) file = 2;
+  else file = open(arg, O_RDONLY, 0666);
+  if (file < 0) {
+    printf("Could not open file: %s\n",arg);
+    return;
+    }
+  inp[port] = file;
+  }
+
+void processIO(char* arg) {
+  byte port;
+  int  file;
+  if (*arg < '1' || *arg > '7') return;
+  port = *arg - '1';
+  arg++;
+  if (*arg != '=') return;
+  arg++;
+  if (strcmp(arg, "stdin") == 0 ) file = 0;
+  else if (strcmp(arg, "stdout") == 0) file = 1;
+  else if (strcmp(arg, "stderr") == 0) file = 2;
+  else file = open(arg, O_RDWR);
+  if (file < 0) {
+    printf("Could not open file: %s\n",arg);
+    return;
+    }
+  inp[port] = file;
+  out[port] = file;
+  }
+
 void processArg(char* arg) {
   int f;
   word addr;
@@ -97,6 +155,9 @@ void processArg(char* arg) {
   else if (strncmp(arg,"-rom=",5) == 0) processMem(arg+5,'O');
   else if (strncmp(arg,"-none=",6) == 0) processMem(arg+6,'X');
   else if (strncmp(arg,"-exec=",6) == 0) execAddr = getHex(arg+6);
+  else if (strncmp(arg,"-o",2) == 0) processOut(arg+2);
+  else if (strncmp(arg,"-io",3) == 0) processIO(arg+3);
+  else if (strncmp(arg,"-i",2) == 0) processInp(arg+2);
   else if (strncmp(arg,"-c=",3) == 0) {
     freq = atof(arg+3);
     freq = 1/(freq/8);
@@ -156,6 +217,10 @@ int main(int argc, char** argv) {
   ramEnd = 0xf7ff;
   romStart = 0xffff;
   romEnd = 0xffff;
+  for (i=0; i<8; i++) {
+    inp[i] = i;
+    out[i] = i;
+    }
 
   file = fopen("run02.rc","r");
   if (file != NULL) {
@@ -296,6 +361,10 @@ int main(int argc, char** argv) {
       if ((i+1)%8 == 0) printf("  ");
       if ((i+1)%16 == 0) printf("\n%X   ",(i+1)/16);
       }
+    }
+  for (i=0; i<8; i++) {
+    if (out[i] > 2) close(out[i]);
+    if (inp[i] > 2) close(inp[i]);
     }
   return 0;
   }
