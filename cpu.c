@@ -179,7 +179,6 @@ void cpu1805(CPU *cpu) {
                 break;
            case 0x09:                                                      // ETQ
                 cpu->etq = 1;
-                break;
                 if (showTrace) {
                   sprintf(tline,"ETQ");
                   strcat(tbuffer, tline);
@@ -187,7 +186,6 @@ void cpu1805(CPU *cpu) {
                 break;
            case 0x0a:                                                      // XIE
                 cpu->xie = 1;
-                break;
                 if (showTrace) {
                   sprintf(tline,"XIE");
                   strcat(tbuffer, tline);
@@ -195,7 +193,6 @@ void cpu1805(CPU *cpu) {
                 break;
            case 0x0b:                                                      // XID
                 cpu->xie = 0;
-                break;
                 if (showTrace) {
                   sprintf(tline,"XID");
                   strcat(tbuffer, tline);
@@ -203,7 +200,6 @@ void cpu1805(CPU *cpu) {
                 break;
            case 0x0c:                                                      // CIE
                 cpu->cie = 1;
-                break;
                 if (showTrace) {
                   sprintf(tline,"CIE");
                   strcat(tbuffer, tline);
@@ -211,7 +207,6 @@ void cpu1805(CPU *cpu) {
                 break;
            case 0x0d:                                                      // CID
                 cpu->cie = 0;
-                break;
                 if (showTrace) {
                   sprintf(tline,"CID");
                   strcat(tbuffer, tline);
