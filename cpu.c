@@ -349,8 +349,8 @@ void cpu1805(CPU *cpu) {
            }
          break;
     case 0x0a:                                                             // RSXD
-         cpu->ram[cpu->r[cpu->x]--] = (cpu->r[cpu->n] >> 8);
          cpu->ram[cpu->r[cpu->x]--] = (cpu->r[cpu->n] & 0xff);
+         cpu->ram[cpu->r[cpu->x]--] = (cpu->r[cpu->n] >> 8);
          cycles += 2;
          if (showTrace) {
            sprintf(tline,"RSXD  R%X             M[X]=%04x",cpu->n,cpu->r[cpu->n]);
