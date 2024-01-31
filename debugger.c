@@ -137,6 +137,7 @@ word disassem1805(CPU* cpu, word address) {
                 sprintf(tmp,"68 %02x %02x    BXI    %02X",inst,adr&0xff,adr&0xff);
                 break;
            }
+         break;
     case 0x60:
          sprintf(tmp,"68 %02x       RLXA   R%X",inst,n);
          break;

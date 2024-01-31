@@ -234,7 +234,7 @@ void cpu1805(CPU *cpu) {
     case 0x03:
          switch (cpu->n) {
            case 0x0e:                                                      // BCI
-                d = cpu->ram[(cpu->r[cpu->p]+1) & 0xffff];
+                d = cpu->ram[(cpu->r[cpu->p]+0) & 0xffff];
                 if (showTrace) {
                   sprintf(tline,"BCI   %02X             ",d);
                   strcat(tbuffer, tline);
@@ -250,7 +250,7 @@ void cpu1805(CPU *cpu) {
                   }
                 break;
            case 0x0f:                                                      // BXI
-                d = cpu->ram[(cpu->r[cpu->p]+1) & 0xffff];
+                d = cpu->ram[(cpu->r[cpu->p]+0) & 0xffff];
                 if (showTrace) {
                   sprintf(tline,"BXI   %02X             ",d);
                   strcat(tbuffer, tline);
@@ -303,21 +303,21 @@ void cpu1805(CPU *cpu) {
            case 0x07:                                                      // DSMB
                 bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->x]], cpu->df);
                 if (showTrace) {
-                  sprintf(tline,"DSMB                   D=%02x",cpu->d);
+                  sprintf(tline,"DSMB                 D=%02x",cpu->d);
                   strcat(tbuffer, tline);
                   }
                 break;
            case 0x0c:                                                      // DACI
                 bcdAdd(cpu, cpu->d, cpu->ram[cpu->r[cpu->p]++], cpu->df);
                 if (showTrace) {
-                  sprintf(tline,"DACI                   D=%02x",cpu->d);
+                  sprintf(tline,"DACI                 D=%02x",cpu->d);
                   strcat(tbuffer, tline);
                   }
                 break;
            case 0x0f:                                                      // DSBI
                 bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->p]++], cpu->df);
                 if (showTrace) {
-                  sprintf(tline,"DSBI                   D=%02x",cpu->d);
+                  sprintf(tline,"DSBI                 D=%02x",cpu->d);
                   strcat(tbuffer, tline);
                   }
                 break;
@@ -379,28 +379,28 @@ void cpu1805(CPU *cpu) {
            case 0x04:                                                      // DADD
                 bcdAdd(cpu, cpu->d, cpu->ram[cpu->r[cpu->x]], 0);
                 if (showTrace) {
-                  sprintf(tline,"DADD                   D=%02x",cpu->d);
+                  sprintf(tline,"DADD                 D=%02x",cpu->d);
                   strcat(tbuffer, tline);
                   }
                 break;
            case 0x07:                                                      // DSM
                 bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->x]], 1);
                 if (showTrace) {
-                  sprintf(tline,"DSM                    D=%02x",cpu->d);
+                  sprintf(tline,"DSM                  D=%02x",cpu->d);
                   strcat(tbuffer, tline);
                   }
                 break;
            case 0x0c:                                                      // DADI
                 bcdAdd(cpu, cpu->d, cpu->ram[cpu->r[cpu->p]++], 0);
                 if (showTrace) {
-                  sprintf(tline,"DADI                   D=%02x",cpu->d);
+                  sprintf(tline,"DADI                 D=%02x",cpu->d);
                   strcat(tbuffer, tline);
                   }
                 break;
            case 0x0f:                                                      // DSMI
                 bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->p]++], 1);
                 if (showTrace) {
-                  sprintf(tline,"DSMI                   D=%02x",cpu->d);
+                  sprintf(tline,"DSMI                 D=%02x",cpu->d);
                   strcat(tbuffer, tline);
                   }
                 break;
