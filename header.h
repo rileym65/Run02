@@ -22,6 +22,8 @@ typedef u_int8_t byte;
 #define LINK extern
 #endif
 
+#define VERSION   "1.0.0"
+
 typedef struct {
   byte p;
   byte x;
@@ -85,6 +87,8 @@ LINK char args[256];
 LINK byte bootdisk;
 LINK int inp[8];
 LINK int out[8];
+LINK char inpNames[8][128];
+LINK char outNames[8][128];
 
 
 

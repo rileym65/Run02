@@ -80,6 +80,7 @@ void processOut(char* arg) {
     return;
     }
   out[port] = file;
+  strcpy(outNames[port], arg);
   }
 
 void processInp(char* arg) {
@@ -99,6 +100,7 @@ void processInp(char* arg) {
     return;
     }
   inp[port] = file;
+  strcpy(inpNames[port], arg);
   }
 
 void processIO(char* arg) {
@@ -119,6 +121,8 @@ void processIO(char* arg) {
     }
   inp[port] = file;
   out[port] = file;
+  strcpy(inpNames[port], arg);
+  strcpy(outNames[port], arg);
   }
 
 void processArg(char* arg) {
@@ -139,6 +143,10 @@ void processArg(char* arg) {
   else if (strcmp(arg,"-4") == 0) { useElfos = 0xff; elfos4 = 0xff; }
   else if (strcmp(arg,"-t") == 0) showTrace = 0xff;
   else if (strcmp(arg,"-u") == 0) liveUpdate = 0xff;
+  else if (strcmp(arg,"-V") == 0) {
+    printf("Run/02 v%s\n",VERSION);
+    printf("by Michael H. Riley\n");
+    }
   else if (strcmp(arg,"-nu") == 0) liveUpdate = 0;
   else if (strcmp(arg,"-v") == 0) { useVisual = 0xff; runDebugger = 0xff; }
   else if (strcmp(arg,"-nv") == 0) useVisual = 0;
@@ -220,7 +228,12 @@ int main(int argc, char** argv) {
   for (i=0; i<8; i++) {
     inp[i] = i;
     out[i] = i;
+    strcpy(inpNames[i],"");
+    strcpy(outNames[i],"");
     }
+  strcpy(inpNames[0],"stdin");
+  strcpy(outNames[1],"stdout");
+  strcpy(outNames[2],"stderr");
 
   file = fopen("run02.rc","r");
   if (file != NULL) {

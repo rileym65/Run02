@@ -101,15 +101,15 @@ void cpu1805(CPU *cpu) {
                 cpu->crunning = 0;
                 cpu->cpre = 0;
                 if (showTrace) {
-                  sprintf(tbuffer,"STPC\n");
-                  trace(tbuffer);
+                  sprintf(tline,"STPC");
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x01:                                                      // DTC
                 cpu->cntr--;
                 if (showTrace) {
-                  sprintf(tbuffer,"DTC\n");
-                  trace(tbuffer);
+                  sprintf(tline,"DTC");
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x02:                                                      // SPM2
@@ -117,8 +117,8 @@ void cpu1805(CPU *cpu) {
                 cpu->cpre = 0;
                 cpu->crunning = 0xff;
                 if (showTrace) {
-                  sprintf(tbuffer,"SPM2\n");
-                  trace(tbuffer);
+                  sprintf(tline,"SPM2");
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x03:                                                      // SCM2
@@ -126,8 +126,8 @@ void cpu1805(CPU *cpu) {
                 cpu->cpre = 0;
                 cpu->crunning = 0xff;
                 if (showTrace) {
-                  sprintf(tbuffer,"SCM2\n");
-                  trace(tbuffer);
+                  sprintf(tline,"SCM2");
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x04:                                                      // SPM1
@@ -135,8 +135,8 @@ void cpu1805(CPU *cpu) {
                 cpu->cpre = 0;
                 cpu->crunning = 0xff;
                 if (showTrace) {
-                  sprintf(tbuffer,"SPM1\n");
-                  trace(tbuffer);
+                  sprintf(tline,"SPM1");
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x05:                                                      // SCM1
@@ -144,8 +144,8 @@ void cpu1805(CPU *cpu) {
                 cpu->cpre = 0;
                 cpu->crunning = 0xff;
                 if (showTrace) {
-                  sprintf(tbuffer,"SCM1\n");
-                  trace(tbuffer);
+                  sprintf(tline,"SCM1");
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x06:                                                      // LDC
@@ -158,8 +158,8 @@ void cpu1805(CPU *cpu) {
                   cpu->ci = 0;
                   }
                 if (showTrace) {
-                  sprintf(tbuffer,"LDC\n");
-                  trace(tbuffer);
+                  sprintf(tline,"LDC");
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x07:                                                      // STM
@@ -167,55 +167,54 @@ void cpu1805(CPU *cpu) {
                 cpu->cpre = 0;
                 cpu->crunning = 0xff;
                 if (showTrace) {
-                  sprintf(tbuffer,"STM\n");
-                  trace(tbuffer);
+                  sprintf(tline,"STM");
                   }
                 break;
            case 0x08:                                                      // GEC
                 cpu->d = cpu->cntr;
                 if (showTrace) {
-                  sprintf(tbuffer,"GEC                    D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"GEC                    D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x09:                                                      // ETQ
                 cpu->etq = 1;
                 break;
                 if (showTrace) {
-                  sprintf(tbuffer,"ETQ\n");
-                  trace(tbuffer);
+                  sprintf(tline,"ETQ");
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0a:                                                      // XIE
                 cpu->xie = 1;
                 break;
                 if (showTrace) {
-                  sprintf(tbuffer,"XIE\n");
-                  trace(tbuffer);
+                  sprintf(tline,"XIE");
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0b:                                                      // XID
                 cpu->xie = 0;
                 break;
                 if (showTrace) {
-                  sprintf(tbuffer,"XID\n");
-                  trace(tbuffer);
+                  sprintf(tline,"XID");
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0c:                                                      // CIE
                 cpu->cie = 1;
                 break;
                 if (showTrace) {
-                  sprintf(tbuffer,"CIE\n");
-                  trace(tbuffer);
+                  sprintf(tline,"CIE");
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0d:                                                      // CID
                 cpu->cie = 0;
                 break;
                 if (showTrace) {
-                  sprintf(tbuffer,"CID\n");
-                  trace(tbuffer);
+                  sprintf(tline,"CID");
+                  strcat(tbuffer, tline);
                   }
                 break;
            }
@@ -226,50 +225,50 @@ void cpu1805(CPU *cpu) {
          d |= cpu->ram[cpu->r[cpu->p]++];
          cycles += 2;
          if (showTrace) {
-           sprintf(tbuffer,"DBNZ  R%X,%04X        R%X=%04x ",cpu->n,d,cpu->n,cpu->r[cpu->n]);
+           sprintf(tline,"DBNZ  R%X,%04X        R%X=%04x ",cpu->n,d,cpu->n,cpu->r[cpu->n]);
+           strcat(tbuffer, tline);
            }
          if (cpu->r[cpu->n] != 0) {
            cpu->r[cpu->p] = d;
-           if (showTrace) strcat(tbuffer,"*\n");
+           if (showTrace) strcat(tline,"*");
            }
          else {
-           if (showTrace) strcat(tbuffer,"\n");
+           if (showTrace) strcat(tline,"");
            }
-         if (showTrace) trace(tbuffer);
          break;
     case 0x03:
          switch (cpu->n) {
            case 0x0e:                                                      // BCI
                 d = cpu->ram[(cpu->r[cpu->p]+1) & 0xffff];
                 if (showTrace) {
-                  sprintf(tbuffer,"BCI   %02X             ",d);
+                  sprintf(tline,"BCI   %02X             ",d);
+                  strcat(tbuffer, tline);
                   }
                 if (cpu->ci) {
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) | (d & 0x00ff);
                   cpu->ci = 0;
-                  if (showTrace) strcat(tbuffer,"*\n");
+                  if (showTrace) strcat(tline,"*");
                   }
                 else {
                   cpu->r[cpu->p]++;
-                  if (showTrace) strcat(tbuffer,"\n");
+                  if (showTrace) strcat(tline,"");
                   }
-                if (showTrace) trace(tbuffer);
                 break;
            case 0x0f:                                                      // BXI
                 d = cpu->ram[(cpu->r[cpu->p]+1) & 0xffff];
                 if (showTrace) {
-                  sprintf(tbuffer,"BXI   %02X             ",d);
+                  sprintf(tline,"BXI   %02X             ",d);
+                  strcat(tbuffer, tline);
                   }
                 if (cpu->xi) {
                   cpu->r[cpu->p] = (cpu->r[cpu->p] & 0xff00) | (d & 0x00ff);
                   cpu->xi = 0;
-                  if (showTrace) strcat(tbuffer,"*\n");
+                  if (showTrace) strcat(tline,"*");
                   }
                 else {
                   cpu->r[cpu->p]++;
-                  if (showTrace) strcat(tbuffer,"\n");
+                  if (showTrace) strcat(tline,"");
                   }
-                if (showTrace) trace(tbuffer);
                 break;
            }
            break;
@@ -278,8 +277,8 @@ void cpu1805(CPU *cpu) {
          cpu->r[cpu->n] |= cpu->ram[cpu->r[cpu->x]++];
          cycles += 2;
          if (showTrace) {
-           sprintf(tbuffer,"RLXA  R%X             R%X=%04x\n",cpu->n,cpu->n,cpu->r[cpu->n]);
-           trace(tbuffer);
+           sprintf(tline,"RLXA  R%X             R%X=%04x",cpu->n,cpu->n,cpu->r[cpu->n]);
+           strcat(tbuffer, tline);
            }
          break;
     case 0x07:
@@ -287,8 +286,8 @@ void cpu1805(CPU *cpu) {
            case 0x04:                                                      // DADC
                 bcdAdd(cpu, cpu->d, cpu->ram[cpu->r[cpu->x]], cpu->df);
                 if (showTrace) {
-                  sprintf(tbuffer,"DADC                   D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"DADC                   D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x06:                                                      // DSAV
@@ -302,29 +301,29 @@ void cpu1805(CPU *cpu) {
                 cpu->ram[cpu->r[cpu->x]] = cpu->d;
                 cycles += 3;
                 if (showTrace) {
-                  sprintf(tbuffer,"DSAV\n");
-                  trace(tbuffer);
+                  sprintf(tline,"DSAV");
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x07:                                                      // DSMB
                 bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->x]], cpu->df);
                 if (showTrace) {
-                  sprintf(tbuffer,"DSMB                   D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"DSMB                   D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0c:                                                      // DACI
                 bcdAdd(cpu, cpu->d, cpu->ram[cpu->r[cpu->p]++], cpu->df);
                 if (showTrace) {
-                  sprintf(tbuffer,"DACI                   D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"DACI                   D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0f:                                                      // DSBI
                 bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->p]++], cpu->df);
                 if (showTrace) {
-                  sprintf(tbuffer,"DSBI                   D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"DSBI                   D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            }
@@ -338,8 +337,8 @@ void cpu1805(CPU *cpu) {
          cpu->r[cpu->p] = d;
          cycles += 7;
          if (showTrace) {
-           sprintf(tbuffer,"SCAL  R%X,%04X\n",cpu->n,d);
-           trace(tbuffer);
+           sprintf(tline,"SCAL  R%X,%04X",cpu->n,d);
+           strcat(tbuffer, tline);
            }
          break;
     case 0x09:                                                             // SRET
@@ -350,8 +349,8 @@ void cpu1805(CPU *cpu) {
          cpu->r[cpu->n] |= cpu->ram[cpu->r[cpu->x]];
          cycles += 5;
          if (showTrace) {
-           sprintf(tbuffer,"SRET  R%X\n",cpu->n);
-           trace(tbuffer);
+           sprintf(tline,"SRET  R%X",cpu->n);
+           strcat(tbuffer, tline);
            }
          break;
     case 0x0a:                                                             // RSXD
@@ -359,16 +358,16 @@ void cpu1805(CPU *cpu) {
          cpu->ram[cpu->r[cpu->x]--] = (cpu->r[cpu->n] & 0xff);
          cycles += 2;
          if (showTrace) {
-           sprintf(tbuffer,"RSXD  R%X             M[X]=%04x\n",cpu->n,cpu->r[cpu->n]);
-           trace(tbuffer);
+           sprintf(tline,"RSXD  R%X             M[X]=%04x",cpu->n,cpu->r[cpu->n]);
+           strcat(tbuffer, tline);
            }
          break;
     case 0x0b:                                                             // RNX
          cpu->r[cpu->x] = cpu->r[cpu->n];
          cycles++;
          if (showTrace) {
-           sprintf(tbuffer,"RNX   R%X             R%X=%04x\n",cpu->x,cpu->x,cpu->r[cpu->x]);
-           trace(tbuffer);
+           sprintf(tline,"RNX   R%X             R%X=%04x",cpu->x,cpu->x,cpu->r[cpu->x]);
+           strcat(tbuffer, tline);
            }
          break;
     case 0x0c:                                                             // RLDI
@@ -376,8 +375,8 @@ void cpu1805(CPU *cpu) {
          cpu->r[cpu->n] |= cpu->ram[cpu->r[cpu->p]++];
          cycles += 2;
          if (showTrace) {
-           sprintf(tbuffer,"RLDI  R%X             R%X=%04x\n",cpu->n,cpu->n,cpu->r[cpu->n]);
-           trace(tbuffer);
+           sprintf(tline,"RLDI  R%X             R%X=%04x",cpu->n,cpu->n,cpu->r[cpu->n]);
+           strcat(tbuffer, tline);
            }
          break;
     case 0x0f:
@@ -385,29 +384,29 @@ void cpu1805(CPU *cpu) {
            case 0x04:                                                      // DADD
                 bcdAdd(cpu, cpu->d, cpu->ram[cpu->r[cpu->x]], 0);
                 if (showTrace) {
-                  sprintf(tbuffer,"DADD                   D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"DADD                   D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x07:                                                      // DSM
                 bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->x]], 1);
                 if (showTrace) {
-                  sprintf(tbuffer,"DSM                    D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"DSM                    D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0c:                                                      // DADI
                 bcdAdd(cpu, cpu->d, cpu->ram[cpu->r[cpu->p]++], 0);
                 if (showTrace) {
-                  sprintf(tbuffer,"DADI                   D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"DADI                   D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            case 0x0f:                                                      // DSMI
                 bcdSub(cpu, cpu->d, cpu->ram[cpu->r[cpu->p]++], 1);
                 if (showTrace) {
-                  sprintf(tbuffer,"DSMI                   D=%02x\n",cpu->d);
-                  trace(tbuffer);
+                  sprintf(tline,"DSMI                   D=%02x",cpu->d);
+                  strcat(tbuffer, tline);
                   }
                 break;
            }

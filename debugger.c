@@ -1,5 +1,7 @@
 #include "header.h"
 
+  char tmp[256];
+
 word d_address;
 word breakpoints[1024];
 int  numBreakpoints;
@@ -76,123 +78,123 @@ word disassem1805(CPU* cpu, word address) {
     case 0x00:
          switch (n) {
            case 0x00:
-                printf("68 %02x       STPC\n",inst);
+                sprintf(tmp,"68 %02x       STPC",inst);
                 break;
            case 0x01:
-                printf("68 %02x       DTC\n",inst);
+                sprintf(tmp,"68 %02x       DTC",inst);
                 break;
            case 0x02:
-                printf("68 %02x       SPM2\n",inst);
+                sprintf(tmp,"68 %02x       SPM2",inst);
                 break;
            case 0x03:
-                printf("68 %02x       SCM2\n",inst);
+                sprintf(tmp,"68 %02x       SCM2",inst);
                 break;
            case 0x04:
-                printf("68 %02x       SPM1\n",inst);
+                sprintf(tmp,"68 %02x       SPM1",inst);
                 break;
            case 0x05:
-                printf("68 %02x       SCM1\n",inst);
+                sprintf(tmp,"68 %02x       SCM1",inst);
                 break;
            case 0x06:
-                printf("68 %02x       LDC\n",inst);
+                sprintf(tmp,"68 %02x       LDC",inst);
                 break;
            case 0x07:
-                printf("68 %02x       STM\n",inst);
+                sprintf(tmp,"68 %02x       STM",inst);
                 break;
            case 0x08:
-                printf("68 %02x       GEC\n",inst);
+                sprintf(tmp,"68 %02x       GEC",inst);
                 break;
            case 0x09:
-                printf("68 %02x       ETQ\n",inst);
+                sprintf(tmp,"68 %02x       ETQ",inst);
                 break;
            case 0x0a:
-                printf("68 %02x       XIE\n",inst);
+                sprintf(tmp,"68 %02x       XIE",inst);
                 break;
            case 0x0b:
-                printf("68 %02x       XID\n",inst);
+                sprintf(tmp,"68 %02x       XID",inst);
                 break;
            case 0x0c:
-                printf("68 %02x       CIE\n",inst);
+                sprintf(tmp,"68 %02x       CIE",inst);
                 break;
            case 0x0d:
-                printf("68 %02x       CID\n",inst);
+                sprintf(tmp,"68 %02x       CID",inst);
                 break;
            }
          break;
     case 0x20:
          adr = cpu->ram[address++] << 8;
          adr |= cpu->ram[address++];
-         printf("68 %02x %02x %02x DBNZ   R%X,%04X\n",inst,(adr & 0xff00)>>8,adr&0xff,n,adr);
+         sprintf(tmp,"68 %02x %02x %02x DBNZ   R%X,%04X",inst,(adr & 0xff00)>>8,adr&0xff,n,adr);
          break;
     case 0x30:
          switch (n) {
            case 0x0e:
                 adr = cpu->ram[address++];
-                printf("68 %02x %02x    BCI    %02X\n",inst,adr&0xff,adr&0xff);
+                sprintf(tmp,"68 %02x %02x    BCI    %02X",inst,adr&0xff,adr&0xff);
                 break;
            case 0x0f:
                 adr = cpu->ram[address++];
-                printf("68 %02x %02x    BXI    %02X\n",inst,adr&0xff,adr&0xff);
+                sprintf(tmp,"68 %02x %02x    BXI    %02X",inst,adr&0xff,adr&0xff);
                 break;
            }
     case 0x60:
-         printf("68 %02x       RLXA   R%X\n",inst,n);
+         sprintf(tmp,"68 %02x       RLXA   R%X",inst,n);
          break;
     case 0x70:
          switch (n) {
            case 0x04:
-                printf("68 %02x       DADC\n",inst);
+                sprintf(tmp,"68 %02x       DADC",inst);
                 break;
            case 0x06:
-                printf("68 %02x       DSAV\n",inst);
+                sprintf(tmp,"68 %02x       DSAV",inst);
                 break;
            case 0x07:
-                printf("68 %02x       DSMB\n",inst);
+                sprintf(tmp,"68 %02x       DSMB",inst);
                 break;
            case 0x0c:
                 adr = cpu->ram[address++];
-                printf("68 %02x %02x    DACI   %02X\n",inst,adr&0xff,adr&0xff);
+                sprintf(tmp,"68 %02x %02x    DACI   %02X",inst,adr&0xff,adr&0xff);
                 break;
            case 0x0f:
                 adr = cpu->ram[address++];
-                printf("68 %02x %02x    DSBI   %02X\n",inst,adr&0xff,adr&0xff);
+                sprintf(tmp,"68 %02x %02x    DSBI   %02X",inst,adr&0xff,adr&0xff);
                 break;
            }
          break;
     case 0x80:
          adr = cpu->ram[address++] << 8;
          adr |= cpu->ram[address++];
-         printf("68 %02x %02x %02x SCAL   R%X,%04X\n",inst,(adr & 0xff00)>>8,adr&0xff,n,adr);
+         sprintf(tmp,"68 %02x %02x %02x SCAL   R%X,%04X",inst,(adr & 0xff00)>>8,adr&0xff,n,adr);
          break;
     case 0x90:
-         printf("68 %02x       SRET   R%X\n",inst,n);
+         sprintf(tmp,"68 %02x       SRET   R%X",inst,n);
          break;
     case 0xa0:
-         printf("68 %02x       RSXD   R%X\n",inst,n);
+         sprintf(tmp,"68 %02x       RSXD   R%X",inst,n);
          break;
     case 0xb0:
-         printf("68 %02x       RNX    R%X\n",inst,n);
+         sprintf(tmp,"68 %02x       RNX    R%X",inst,n);
          break;
     case 0xc0:
          adr = cpu->ram[address++] << 8;
          adr |= cpu->ram[address++];
-         printf("68 %02x %02x %02x RLDI   R%X,%04X\n",inst,(adr & 0xff00)>>8,adr&0xff,n,adr);
+         sprintf(tmp,"68 %02x %02x %02x RLDI   R%X,%04X",inst,(adr & 0xff00)>>8,adr&0xff,n,adr);
          break;
     case 0xf0:
          switch (n) {
            case 0x04:
-                printf("68 %02x       DADD\n",inst);
+                sprintf(tmp,"68 %02x       DADD",inst);
                 break;
            case 0x07:
-                printf("68 %02x       DSM\n",inst);
+                sprintf(tmp,"68 %02x       DSM",inst);
                 break;
            case 0x0c:
                 adr = cpu->ram[address++];
-                printf("68 %02x %02x    DADI   %02X\n",inst,adr&0xff,adr&0xff);
+                sprintf(tmp,"68 %02x %02x    DADI   %02X",inst,adr&0xff,adr&0xff);
                 break;
            case 0x0f:
                 adr = cpu->ram[address++];
-                printf("68 %02x %02x    DSMI   %02X\n",inst,adr&0xff,adr&0xff);
+                sprintf(tmp,"68 %02x %02x    DSMI   %02X",inst,adr&0xff,adr&0xff);
                 break;
            }
          break;
@@ -205,7 +207,6 @@ word disassem(CPU* cpu, word address) {
   byte n;
   byte inst;
   word adr;
-  char tmp[80];
   sprintf(dline, "%04x: ",address);
   inst = cpu->ram[address++];
   i = inst & 0xf0;
@@ -599,6 +600,22 @@ void dbgShow(CPU* cpu, char* buffer) {
   char line[80];
   char tmp[32];
   word a;
+  if (*buffer == 'i' || *buffer == 'I') {
+    output("Input ports:");
+    for (x=0; x<7; x++) {
+      sprintf(line,"  %d: %s",x+1,inpNames[x]);
+      output(line);
+      }
+    return;
+    }
+  if (*buffer == 'o' || *buffer == 'O') {
+    output("Output ports:");
+    for (x=0; x<7; x++) {
+      sprintf(line,"  %d: %s",x+1,outNames[x]);
+      output(line);
+      }
+    return;
+    }
   if (*buffer == 'm' || *buffer == 'M') {
     if (useVisual) {
       output("       01234567 89ABCDEF 01234567 89ABCDEF");
@@ -1212,7 +1229,9 @@ void help() {
     output("?Rn            - dump memory from R[n]");
     output("?addr          - dump memory from specified address");
     output("??             - show CPU registers");
+    output("?I             - show input port mappings");
     output("?M             - show memory map");
+    output("?O             - show output port mappings");
     output("$              - disassemble memory");
     output("$P             - disassemble memory from R[P]");
     output("$X             - disassemble memory from R[X]");
@@ -1220,10 +1239,10 @@ void help() {
     output("$addr          - disassemble memory from specified address");
     output("!addr bb bb .. - store bytes at address");
     output("!P bb bb  ..   - store bytes at M[R[P]]");
-    output("!X bb bb  ..   - store bytes at M[R[X]]");
-    output("!Rn bb bb  ..  - store bytes at M[R[n]]");
     printf("\e[23;1H--MORE--");
     fgets(buffer,255,stdin);
+    output("!X bb bb  ..   - store bytes at M[R[X]]");
+    output("!Rn bb bb  ..  - store bytes at M[R[n]]");
     output("+ bb bb ..     - push values to stack (STXD)");
     output("-n             - pop n items from stack (IRX * n)");
     output("@              - run at R[P]");
@@ -1238,10 +1257,10 @@ void help() {
     output("C--            - disable break point conditions");
     output("D              - show value in D");
     output("D=b            - Set D to b");
-    output("DF             - show value in DF");
-    output("DF=b           - set value in DF");
     printf("\e[23;1H--MORE--");
     fgets(buffer,255,stdin);
+    output("DF             - show value in DF");
+    output("DF=b           - set value in DF");
     output("DI bb          - perform DMA In using bb as input");
     output("DO             - perform DMA Out");
     output("I              - trigger interrupt action");
@@ -1256,10 +1275,10 @@ void help() {
     output("Rn=xxxx        - set Rn to xxxx");
     output("T              - show value of T");
     output("T=n            - set T to n");
-    output("T?             - show instruction traps");
-    output("T+bb           - add instruction trap");
     printf("\e[23;1H--MORE--");
     fgets(buffer,255,stdin);
+    output("T?             - show instruction traps");
+    output("T+bb           - add instruction trap");
     output("T-bb           - remove instruction trap");
     output("TR+            - turn on tracing");
     output("TR-            - turn off tracing");
@@ -1276,7 +1295,9 @@ void help() {
     printf("?Rn            - dump memory from R[n]\n");
     printf("?addr          - dump memory from specified address\n");
     printf("??             - show CPU registers\n");
-    printf("?M             - show memory map\n");
+    printf("?I             - show input port mappings");
+    printf("?M             - show memory map");
+    printf("?O             - show output port mappings");
     printf("$              - disassemble memory\n");
     printf("$P             - disassemble memory from R[P]\n");
     printf("$X             - disassemble memory from R[X]\n");
