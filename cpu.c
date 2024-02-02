@@ -1470,7 +1470,7 @@ void cpuCycle(CPU *cpu) {
            return;
            break;
       }
-    if (cpu->r[cpu->p] >= 0xf000) {
+    if (cpu->r[cpu->p] >= 0xf800) {
       printf("Unsupported BIOS call: %04x\n",cpu->r[cpu->p]);
       if (tcsetattr(0,TCSANOW,&original) != 0) {
         printf("Could not restore terminal attributes\n");
