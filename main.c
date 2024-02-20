@@ -51,8 +51,8 @@ void processMem(char* line, char typ) {
     printf("Invalid memory specifiation.  Aborting: %s\n",orig);
     exit(1);
     }
-  start >>= 8;
-  end >>= 8;
+//  start >>= 8;
+//  end >>= 8;
   if (typ == 'A') {
     ramStart = start;
     ramEnd = end;
@@ -167,8 +167,9 @@ void processArg(char* arg) {
   else if (strncmp(arg,"-io",3) == 0) processIO(arg+3);
   else if (strncmp(arg,"-i",2) == 0) processInp(arg+2);
   else if (strncmp(arg,"-c=",3) == 0) {
-    freq = atof(arg+3);
-    freq = 1/(freq/8);
+    freq = 125000 * atof(arg+3);
+    freq /= 100;
+printf("Cycles per 10ms: %d\n",freq);
     }
   else if (strncmp(arg,"-a=",3) == 0) {
     strcpy(args, arg+3);
@@ -197,7 +198,10 @@ int main(int argc, char** argv) {
   char buffer[256];
   struct timeval startTime;
   struct timeval endTime;
+  struct timeval tv;
   long long st,et;
+  long long pst;
+  long long pet;
   struct termios terminal;
   for (i=0; i<256; i++) imap[i] = 0;
   use1805 = 0;
@@ -342,13 +346,31 @@ int main(int argc, char** argv) {
     }
   else cpu.r[0] = execAddr;
   gettimeofday(&startTime, NULL);
+  if (freq) {
+    periodCycles = 0;
+    pst = startTime.tv_sec * 1000 + (tv.tv_usec / 1000);
+    }
   if (runDebugger) {
     debugger(&cpu);
     }
   else {
       while (runFlag) {
+      cycles = 0;
       cpuCycle(&cpu);
+      periodCycles += cycles;
       if (cpu.idle) runFlag = 0;
+      if (freq && runFlag) {
+        if (periodCycles >= freq) {
+          gettimeofday(&tv, NULL);
+          pet = pst;
+          while (pet-pst < 10) {
+            gettimeofday(&tv, NULL);
+            pet = tv.tv_sec * 1000 + (tv.tv_usec / 1000);
+            }
+          periodCycles = 0;
+          pst = pet;
+          }
+        }
       }
     }
   gettimeofday(&endTime, NULL);

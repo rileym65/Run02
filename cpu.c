@@ -12,7 +12,7 @@ char tline[80];
 byte readMem(CPU* cpu, word addr) {
   if (addr == 0xfff9) return 0x01;
   if (addr == 0xfffa) return 0x00;
-  if (addr == 0xfffb) return 0x0c;
+  if (addr == 0xfffb) return 0x0d;
   if (mmap[(addr & 0xff00) >> 8] != 'X') return cpu->ram[addr];
   return 0xff;
   }
@@ -619,7 +619,6 @@ void cpuCycle(CPU *cpu) {
   int  f;
   int  flags;
   int  p;
-  int  cycles;
   char buffer[32];
   char buffer2[2];
   char name2[32];
@@ -1436,7 +1435,7 @@ void cpuCycle(CPU *cpu) {
            break;
       case 0xff81:                                                          // f_getdev
            if (showTrace) strcat(tbuffer, "CALL  F_GETDEV");
-           cpu->r[0xf] = 0x0005;
+           cpu->r[0xf] = 0x0205;
            if (useRTC) cpu->r[0xf] |= 0x10;
            if (useNVR) cpu->r[0xf] |= 0x20;
            if (useUART) cpu->r[0xf] |= 0x08;
@@ -1483,16 +1482,16 @@ void cpuCycle(CPU *cpu) {
   imap[i]++;
   cpu->n = i & 0xf;
   cpu->i = (i >> 4) & 0xff;
-  if (freq != 0) {
-    cycles = (cpu->i != 0xc) ? 2 : 3;
-    gettimeofday(&tv,NULL);
-    st = tv.tv_sec * 1000000 + tv.tv_usec;
-    et = st;
-    while (et-st < cycles * freq) {
-      gettimeofday(&tv,NULL);
-      et = tv.tv_sec * 1000000 + tv.tv_usec;
-      }
-    }
+//  if (freq != 0) {
+//    cycles = 2;
+//    gettimeofday(&tv,NULL);
+//    st = tv.tv_sec * 1000000 + tv.tv_usec;
+//    et = st;
+//    while (et-st < cycles * freq) {
+//      gettimeofday(&tv,NULL);
+//      et = tv.tv_sec * 1000000 + tv.tv_usec;
+//      }
+//    }
   icount++;
   cycles = 2;
   switch (cpu->i) {
@@ -2221,6 +2220,9 @@ void cpuCycle(CPU *cpu) {
         }
       }
     }
+
+  periodCycles += cycles;
+
   if (use1805 && cpu->ci != 0 && cpu->ie != 0) cpuIntr(cpu, 'C');
   }
 

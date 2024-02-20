@@ -74,7 +74,7 @@ LINK word romEnd;
 LINK int  imap[256];
 LINK char mmap[256];
 LINK byte nvr[128];
-LINK double freq;
+LINK int  freq;
 LINK struct termios original;
 LINK byte liveUpdate;
 LINK char **conditions;
@@ -89,6 +89,8 @@ LINK int inp[8];
 LINK int out[8];
 LINK char inpNames[8][128];
 LINK char outNames[8][128];
+LINK int  periodCycles;
+LINK int  cyclesPerPeriod;
 
 
 
