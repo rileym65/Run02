@@ -1,5 +1,7 @@
 #define MAIN
 
+#include <signal.h>
+
 #include "header.h"
 
 word getHex(char* line) {
@@ -191,6 +193,11 @@ printf("Cycles per 10ms: %d\n",freq);
   else loader(arg);
   }
 
+void controlC(int i) {
+printf("Control c pressed\n"); fflush(stdout);
+  ctrlC = -1;
+  }
+
 int main(int argc, char** argv) {
   int i;
   FILE* file;
@@ -204,6 +211,7 @@ int main(int argc, char** argv) {
   long long pet;
   struct termios terminal;
   for (i=0; i<256; i++) imap[i] = 0;
+  ctrlC = 0;
   use1805 = 0;
   useElfos = 0;
   useBios = 0xff;
@@ -255,6 +263,8 @@ int main(int argc, char** argv) {
     i++;
     }
   
+//  signal(SIGINT, controlC);
+
   for (i=0; i<256; i++) mmap[i] = 'X';
   if (useBios) {
     romStart = 0xf800;
@@ -320,7 +330,7 @@ int main(int argc, char** argv) {
   if (runDebugger == 0) {
     tcgetattr(0,&terminal);
     original = terminal;
-    terminal.c_lflag &= ~ICANON;
+    terminal.c_lflag &= ~(ICANON | ISIG);
     terminal.c_lflag &= ~ECHO;
     if (tcsetattr(0,TCSANOW,&terminal) != 0) {
       printf("Could not set terminal attributes\n");

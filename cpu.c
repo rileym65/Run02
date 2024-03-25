@@ -1074,7 +1074,7 @@ void cpuCycle(CPU *cpu) {
       case 0xff69:                                                           // f_inputl
            if (showTrace) strcat(tbuffer, "CALL  F_INPUT");
            key = 0;
-           while (key != 10 && key != 13 && key != 27) {
+           while (key != 10 && key != 13 && key != 3) {
              read(0,&key,1);
              if ((key >= ' ' && key < 127) || key == 9) {
                cpu->ram[cpu->r[0x0f]++] = key;
@@ -1089,7 +1089,7 @@ void cpuCycle(CPU *cpu) {
              else if (key == 10 || key == 13) {
                cpu->df = 0;
                }
-             else if (key == 27) {
+             else if (key == 3) {
                cpu->df = 1;
                }
              }

@@ -91,6 +91,7 @@ LINK char inpNames[8][128];
 LINK char outNames[8][128];
 LINK int  periodCycles;
 LINK int  cyclesPerPeriod;
+LINK int  ctrlC;
 
 
 
