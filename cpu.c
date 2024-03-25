@@ -1078,11 +1078,11 @@ void cpuCycle(CPU *cpu) {
              read(0,&key,1);
              if ((key >= ' ' && key < 127) || key == 9) {
                cpu->ram[cpu->r[0x0f]++] = key;
-               printf("%c",key);
+               if (cpu->r[0x0e] & 0x0100) printf("%c",key);
                fflush(stdout);
                }
              else if (key == 8 || key == 127) {
-               printf("%c %c",8,8);
+               if (cpu->r[0x0e] & 0x0100) printf("%c %c",8,8);
                fflush(stdout);
                cpu->r[0x0f]--;
                }
