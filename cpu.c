@@ -1076,7 +1076,7 @@ void cpuCycle(CPU *cpu) {
            key = 0;
            while (key != 10 && key != 13 && key != 27) {
              read(0,&key,1);
-             if (key >= ' ' && key < 127) {
+             if ((key >= ' ' && key < 127) || key == 9) {
                cpu->ram[cpu->r[0x0f]++] = key;
                printf("%c",key);
                fflush(stdout);
